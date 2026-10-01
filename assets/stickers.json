@@ -1,0 +1,11 @@
+{
+  "comment": "Curated Phosphor icon names offered by the StickerPicker (ph:<name>). Any Phosphor name works in the search box.",
+  "groups": [
+    { "name": "Sound",     "icons": ["speaker-high", "speaker-low", "speaker-simple-high", "music-note", "music-notes", "music-notes-simple", "headphones", "microphone", "microphone-stage", "megaphone", "radio", "vinyl-record", "cassette-tape", "piano-keys", "guitar", "metronome", "bell", "bell-ringing", "siren", "waveform"] },
+    { "name": "Effects",   "icons": ["sparkle", "lightning", "fire", "bomb", "confetti", "star", "magic-wand", "cloud-lightning", "snowflake", "sun", "moon", "flashlight", "lightbulb", "crosshair", "target", "flame", "shooting-star", "planet", "meteor", "atom"] },
+    { "name": "Reactions", "icons": ["hands-clapping", "thumbs-up", "thumbs-down", "heart", "smiley", "smiley-sad", "smiley-x-eyes", "smiley-wink", "smiley-nervous", "hand-waving", "hand-peace", "hand-heart", "skull", "ghost", "alien", "trophy", "medal", "crown", "gift", "balloon", "cake", "party-popper"] },
+    { "name": "Animals",   "icons": ["cat", "dog", "horse", "bird", "butterfly", "fish", "cow", "rabbit", "bug", "paw-print"] },
+    { "name": "Things",    "icons": ["rocket", "rocket-launch", "airplane", "car", "train", "boat", "bicycle", "alarm", "timer", "clock", "hourglass", "camera", "video-camera", "television", "game-controller", "phone", "coffee", "pizza", "hamburger", "beer-bottle", "wine", "leaf", "flower", "tree", "flag", "shield", "sword", "key", "lock", "plug", "power", "gear", "wrench", "hammer", "scissors", "paint-brush", "palette", "tag", "trash", "folder", "file"] },
+    { "name": "Interface", "icons": ["play", "pause", "stop", "record", "skip-forward", "skip-back", "repeat", "shuffle", "check", "check-circle", "x", "x-circle", "warning", "info", "question", "bell", "cursor-click", "hand-pointing", "arrow-right", "arrow-left", "arrow-up", "arrow-down", "arrows-clockwise", "circle", "square", "triangle", "diamond", "hexagon", "number-circle-one", "number-circle-two", "number-circle-three"] }
+  ]
+}

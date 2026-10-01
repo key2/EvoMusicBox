@@ -1,0 +1,25 @@
+# build trees
+/build*/
+/cmake-build-*/
+/out/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+*.log
+__pycache__/
+*.pyc
+
+# local media: downloaded sound packs / their .liv shows (hundreds of MB, not ours to redistribute)
+/soundpacks/
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# runtime artefacts when running from the source tree
+/imgui.ini
+/layouts/
+/test-media/
+*.evobox/autosave/

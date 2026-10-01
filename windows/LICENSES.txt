@@ -1,0 +1,39 @@
+EvoMusicBox for Windows - third-party components shipped in this package
+=========================================================================
+
+evobox.exe statically contains:
+  Dear ImGui (MIT), ImPlot (MIT), ImGuiFileDialog (MIT), GLFW (zlib/libpng),
+  miniaudio (MIT-0 / public domain), miniz (MIT), nlohmann/json (MIT), stb (MIT / public domain),
+  doctest (MIT, tests only), Phosphor Icons (MIT), Roboto (Apache 2.0).
+  TikTok LIVE client (ttlive-cpp, MIT): Protocol Buffers runtime 3.21.12 (BSD-3-Clause,
+  https://github.com/protocolbuffers/protobuf), QuickJS (MIT, https://bellard.org/quickjs/),
+  zlib (zlib licence, https://zlib.net/).
+
+Dynamically linked libraries placed next to evobox.exe:
+
+* curl-impersonate (libcurl-impersonate.dll) - the TikTok LIVE transport
+  Build: lexiforest/curl-impersonate release v2.0.0a5, "x86_64-win32" (libcurl 8.15.0 with the
+  Chrome impersonation patches). Self-contained: it statically includes BoringSSL (ISC / OpenSSL /
+  SSLeay licences, https://boringssl.googlesource.com/boringssl), nghttp2 (MIT), Brotli (MIT),
+  zstd (BSD-3-Clause) and zlib.
+  Licence: curl licence (MIT/X derivative), https://curl.se/docs/copyright.html
+  Sources and build scripts: https://github.com/lexiforest/curl-impersonate
+  cacert.pem: Mozilla's CA certificate bundle as distributed by the curl project
+  (https://curl.se/docs/caextract.html), Mozilla Public License 2.0.
+  tiktok-js/: TikTok's web client scripts (webmssdk.js, browser.sg.js, ...) as redistributed by
+  ttlive-cpp; loaded at runtime by the request signer. They remain the property of their authors.
+
+
+* FFmpeg (avcodec-62.dll, avformat-62.dll, avutil-60.dll, swresample-6.dll, swscale-9.dll)
+  Build: BtbN FFmpeg-Builds, "win64-lgpl-shared" variant (FFmpeg 8.1, including libmp3lame).
+  Licence: GNU Lesser General Public License v3 (the LGPL build; no GPL-only components).
+  Sources and build scripts: https://github.com/BtbN/FFmpeg-Builds  (tag "latest")
+                             https://ffmpeg.org/download.html       (FFmpeg source)
+  The DLLs may be replaced by any ABI-compatible FFmpeg 8.1 build (same major versions).
+  libmp3lame: LGPL v2.1+, https://lame.sourceforge.io/
+
+* GCC runtime from mingw-w64 (libstdc++-6.dll, libgcc_s_seh-1.dll, libwinpthread-1.dll)
+  GPL v3 with the GCC Runtime Library Exception; winpthreads: MIT / BSD-3.
+  https://gcc.gnu.org/  https://www.mingw-w64.org/
+
+The EvoMusicBox application itself: see README.md.
