@@ -13,6 +13,9 @@ Navigator ─ 分类 / 礼物筛选              Workspace ─ Sounds | Gifts �
                                         Clip Editor / Live Monitor（底部）
 ```
 
+**下载**：预编译的 Windows x64 安装包 —— NSIS 安装程序与便携 zip —— 发布在
+[Releases 页面](https://github.com/key2/EvoMusicBox/releases)。Linux 请从源码构建（见下文）。
+
 ## 获取源码
 
 依赖以 git 子模块的形式放在 `third_party/` 下，因此请递归克隆：
@@ -86,6 +89,9 @@ CMake 选项：
 （没有 Python 时 CMake 会回退到纯 CMake 的生成器）。
 
 ## Windows 构建（在 Linux 上交叉编译：安装程序 + zip）
+
+现成的安装包发布在 [Releases 页面](https://github.com/key2/EvoMusicBox/releases)（二进制文件未做代码签名，
+首次运行时 SmartScreen 会要求确认）。如需自行构建：
 
 ```bash
 sudo apt install g++-mingw-w64-x86-64-posix mingw-w64-tools protobuf-compiler wine   # Debian/Ubuntu；wine 仅用于测试

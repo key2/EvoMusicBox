@@ -369,6 +369,12 @@ bundle the BoringSSL DLL would fail every TLS verification. Not on Windows: cras
 ## 6. Change log (newest first, with the reasons)
 
 **2026-10-01**
+- **Release v0.1.0**: annotated tag on `main`, GitHub Release with the Windows x64 artifacts built by
+  `tools/windows/build.sh` from that commit (`EvoMusicBox-0.1.0-win64.exe` installer + `.zip`,
+  SHA-256 in the notes). Releasing = bump `EVOBOX_VERSION` in `CMakeLists.txt`, run the script,
+  `git tag -a vX.Y.Z`, `gh release create vX.Y.Z build-win/dist/EvoMusicBox-X.Y.Z-win64.{exe,zip}`.
+  Binaries are unsigned (SmartScreen prompt) and Wine-verified only. READMEs point at the Releases
+  page.
 - **Published**: `git init`, the six `third_party` checkouts registered as submodules, first commit
   pushed to the public repo `github.com/key2/EvoMusicBox` (§3). `.gitignore` grew `soundpacks/`
   and `__pycache__`; the ttlive-cpp mingw patch was committed to `key2/ttlive-cpp`. README got a

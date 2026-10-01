@@ -14,6 +14,9 @@ Navigator ─ categories / gift filters      Workspace ─ Sounds | Gifts tab   
                                         Clip Editor / Live Monitor (bottom)
 ```
 
+**Downloads**: prebuilt Windows x64 packages — the NSIS installer and a portable zip — are on the
+[Releases page](https://github.com/key2/EvoMusicBox/releases). Linux builds from source (below).
+
 ## Getting the source
 
 The dependencies live under `third_party/` as git submodules, so clone recursively:
@@ -89,6 +92,10 @@ The build deploys `assets/`, `fonts/` (Roboto + Phosphor) and `tiktok-js/` next 
 `tools/gen_phosphor_icons.py` (CMake falls back to a pure-CMake generator without Python).
 
 ## Windows build (cross-compiled from Linux: installer + zip)
+
+Ready-made packages are published on the [Releases page](https://github.com/key2/EvoMusicBox/releases)
+(the binaries are not code-signed, so SmartScreen asks for confirmation on first run). To build
+them yourself:
 
 ```bash
 sudo apt install g++-mingw-w64-x86-64-posix mingw-w64-tools protobuf-compiler wine   # Debian/Ubuntu; wine only for the tests
