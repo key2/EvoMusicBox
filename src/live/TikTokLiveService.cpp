@@ -67,6 +67,11 @@ std::string TikTokLiveService::defaultJsDir()
     std::error_code ec;
     std::filesystem::path p = paths::exeDir() / "tiktok-js";
     if (std::filesystem::exists(p / "hybrid-fake-dom.js", ec)) return p.string();
+#if defined(__APPLE__)
+    // Inside an .app, tiktok-js is staged in Contents/Resources (tools/macos/build.sh).
+    p = paths::exeDir().parent_path() / "Resources" / "tiktok-js";
+    if (std::filesystem::exists(p / "hybrid-fake-dom.js", ec)) return p.string();
+#endif
 #ifdef EVOBOX_SOURCE_DIR
     p = std::filesystem::path(EVOBOX_SOURCE_DIR) / "third_party" / "ttlive-cpp" / "js";
     if (std::filesystem::exists(p / "hybrid-fake-dom.js", ec)) return p.string();

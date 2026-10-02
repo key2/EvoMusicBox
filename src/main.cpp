@@ -220,8 +220,19 @@ int main(int argc, char** argv)
     glfwSetErrorCallback(glfwErrorCb);
     choosePlatform();
     if (!glfwInit()) { fprintf(stderr, "glfwInit failed\n"); return 1; }
+#if defined(__APPLE__)
+    // macOS's NSGL only exposes a 3.2+ Core profile (no 3.0/3.1); it must be requested
+    // forward-compatible. The GL3 backend then needs the matching GLSL "#version 150".
+    const char* glslVersion = "#version 150";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+#else
+    const char* glslVersion = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
     if (smokeFrames > 0 && !visibleSmoke) glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     Application app;
@@ -250,7 +261,7 @@ int main(int argc, char** argv)
     io.IniFilename = iniPath.c_str();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init(glslVersion);
     theme::apply(app.prefs.uiScale);
     Fonts::load(app.prefs.uiScale);
 

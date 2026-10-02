@@ -129,6 +129,11 @@ std::string findResource(const std::string& rel)
     std::error_code ec;
     fs::path candidates[] = {
         exeDir() / rel,
+#if defined(__APPLE__)
+        // Inside an .app the executable is Contents/MacOS/evobox and resources live in
+        // Contents/Resources (tools/macos/build.sh stages them there).
+        exeDir().parent_path() / "Resources" / rel,
+#endif
 #ifdef EVOBOX_SOURCE_DIR
         fs::path(EVOBOX_SOURCE_DIR) / rel,
 #endif

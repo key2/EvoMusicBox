@@ -171,16 +171,17 @@ TEST_CASE("default target invariant")
     CHECK_FALSE(b->isDefault());
     // deleting the default falls back to Localhost and re-points commands
     Sound* s = addSound(p, "S", 0);
-    OscCommand* c = s->actions().phase(Anchor::Start)->commands.addCommandUndoable("/x", a->uid);
+    Uid aUid = a->uid; // keep the uid: deleteTargetUndoable frees the OscTarget, so `a` dangles
+    OscCommand* c = s->actions().phase(Anchor::Start)->commands.addCommandUndoable("/x", aUid);
     p.deleteTargetUndoable(a);
-    CHECK(p.oscTargets.find(a->uid) == nullptr);
+    CHECK(p.oscTargets.find(aUid) == nullptr);
     CHECK(c->targetUid == 0);
     CHECK(p.oscTargets.defaultTarget()->isDefault());
     // Localhost cannot be deleted
     p.deleteTargetUndoable(p.oscTargets.localhost());
     CHECK(p.oscTargets.localhost() != nullptr);
     organic::UndoManager::get().undo();
-    CHECK(p.oscTargets.find(a->uid) != nullptr);
+    CHECK(p.oscTargets.find(aUid) != nullptr);
 }
 
 TEST_CASE("delete sound clears gift/room references and is undoable")

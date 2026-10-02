@@ -230,6 +230,7 @@ TEST_CASE("merge a .liv with its OSC: remapped uids, copied files, reused catego
     CHECK(b.roomEvents.items.size() == (size_t)RoomEventKind::Count);
 
     // one undo step restores everything
+    Uid kickUid = kick->uid; // undo frees the merged Sound objects, so `kick` dangles afterwards
     CHECK(organic::UndoManager::get().undoName() == "Merge show");
     organic::UndoManager::get().undo();
     CHECK(b.sounds.items.size() == 1);
@@ -242,7 +243,7 @@ TEST_CASE("merge a .liv with its OSC: remapped uids, copied files, reused catego
     organic::UndoManager::get().redo();
     Sound* kick2 = soundNamed(b, "Kick");
     REQUIRE(kick2);
-    CHECK(kick2->uid == kick->uid);
+    CHECK(kick2->uid == kickUid);
     CHECK(fs::exists(ProjectIO::clipPath(b, *kick2)));
     CHECK(b.roomEvents.find(RoomEventKind::Like)->soundUid == soundNamed(b, "Anthem")->uid);
     CHECK(b.giftActions.find(1001) != nullptr);

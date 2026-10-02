@@ -91,6 +91,27 @@ The build deploys `assets/`, `fonts/` (Roboto + Phosphor) and `tiktok-js/` next 
 `build/generated/IconsPhosphor.h` is generated from Phosphor's `style.css` by
 `tools/gen_phosphor_icons.py` (CMake falls back to a pure-CMake generator without Python).
 
+## macOS build (self-contained .app)
+
+The plain `cmake`/`ninja` build above works on macOS (GLFW builds its Cocoa backend; the app asks
+for an OpenGL 3.2 Core profile, which is all macOS exposes). `tools/macos/build.sh` wraps it to
+produce a **relocatable** `EvoMusicBox.app` that runs on a clean Mac without Homebrew:
+
+```bash
+brew install cmake ninja ffmpeg protobuf           # glfw is vendored
+tools/macos/build.sh                                # configure + build + ctest + bundle + zip
+#   -> build-mac/dist/EvoMusicBox-<version>-macos-<arch>.zip
+tools/macos/build.sh --no-tiktok                    # soundboard + OSC only
+```
+
+The script copies every non-system dylib the binary links (FFmpeg, protobuf, abseil, brotli, zstd,
+libidn2, …) into `EvoMusicBox.app/Contents/Frameworks`, rewrites their install names to `@rpath`
+with `install_name_tool`, stages `assets/`, `fonts/` and `tiktok-js/` under `Contents/Resources`,
+writes an `Info.plist` (with the `.liv` document type), converts `musicbox.ico` to an `.icns`, and
+ad-hoc signs the bundle. The build is arm64 (Apple Silicon) on an arm64 host, x86_64 on an Intel
+host; there is no universal binary yet. The `.app` is **not** notarized, so Gatekeeper asks on first
+launch — right-click → Open, or `xattr -dr com.apple.quarantine EvoMusicBox.app`.
+
 ## Windows build (cross-compiled from Linux: installer + zip)
 
 Ready-made packages are published on the [Releases page](https://github.com/key2/EvoMusicBox/releases)
