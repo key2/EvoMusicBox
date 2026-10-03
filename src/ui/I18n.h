@@ -14,6 +14,7 @@
 // frames). The returned storage is stable until the next setLanguage().
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 

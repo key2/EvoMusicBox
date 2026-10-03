@@ -368,6 +368,18 @@ bundle the BoringSSL DLL would fail every TLS verification. Not on Windows: cras
 
 ## 6. Change log (newest first, with the reasons)
 
+**2026-10-03**
+- Pulled `2d71dfa` (macOS: 3.2 Core GL context, `tools/macos/build.sh` self-contained `.app`) and
+  `88e2b2f` (i18n: Language menu English / Russian / Chinese, `assets/lang/<code>.json` catalogues,
+  `src/ui/I18n.*`, Noto Sans CJK merged into the UI font, `imgui_organic` → 98fa479 for the
+  translator hooks). `src/ui/I18n.h` used `std::shared_ptr` without `<memory>` — fine on the
+  toolchain it was written on, a hard error with GCC 14 / mingw-w64 (`'shared_ptr' in namespace
+  'std' does not name a template type`): include added. Linux and Windows rebuilt from `main`:
+  11/11 suites on both, Chinese UI verified headlessly on both (prefs `language` = `zh`); the
+  16 MB CJK font grows the packages to 22 MB (Linux tgz), 64 MB installer / 84 MB zip. Not yet
+  done: `README.zh-CN.md` lacks the new "Languages / translations" and "macOS build" sections of
+  `README.md`, and this file has no §4 section on the i18n layer or the macOS packaging yet.
+
 **2026-10-01**
 - **Release v0.1.0**: annotated tag on `main`, GitHub Release with the Windows x64 artifacts built by
   `tools/windows/build.sh` from that commit (`EvoMusicBox-0.1.0-win64.exe` installer + `.zip`,
