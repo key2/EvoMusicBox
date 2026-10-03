@@ -42,7 +42,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
     {
         float x = xFor(ms);
         dl->AddLine(ImVec2(x, lineY - 4), ImVec2(x, lineY + 4), theme::u32(c.textFaint));
-        std::string lbl = ms >= 1000 ? str::format("%.3gs", ms / 1000.0) : str::format("%d", (int)ms);
+        std::string lbl = ms >= 1000 ? str::format("%.3g", ms / 1000.0) + TR("time.secondsShort") : str::format("%d", (int)ms);
         ImVec2 ts = ImGui::CalcTextSize(lbl.c_str());
         dl->AddText(ImVec2(x - ts.x * 0.5f, p1.y - ts.y - 4), theme::u32(c.textFaint), lbl.c_str());
     }
@@ -73,7 +73,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
         // marker
         dl->AddLine(ImVec2(x, lineY - 18), ImVec2(x, lineY + 10), theme::u32(col), 2.f);
         dl->AddCircleFilled(ImVec2(x, lineY), 6.f, theme::u32(col));
-        std::string lbl = ph.niceName + "  " + formatMs((long long)ms);
+        std::string lbl = phaseLabel(ph) + "  " + str::groupThousands((long long)ms) + " " + TR("osc.ms");
         std::string cnt = std::to_string(ph.commands.items.size()) + (ph.commands.items.size() == 1 ? std::string(" ") + TR("phase.cmd") : std::string(" ") + TR("phase.cmds"));
         ImVec2 ts = ImGui::CalcTextSize(lbl.c_str());
         float lx = std::clamp(x - ts.x * 0.5f, p0.x + 4, p1.x - ts.x - 4);
@@ -99,7 +99,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
                 s_drag = nullptr;
             }
             if (hov && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
-                ImGui::SetTooltip("Drag to change the timer");
+                ImGui::SetTooltip("%s", TR("phase.dragTimer"));
         }
     }
     // End phases: text badge on the right
@@ -107,7 +107,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
     for (auto& php : actions.phases)
     {
         if (php->anchor != Anchor::End) continue;
-        std::string lbl = php->niceName + "  +" + formatMs(std::max(0, php->delayMs())) + TR("phase.afterEnd");
+        std::string lbl = phaseLabel(*php) + "  +" + str::groupThousands((long long)std::max(0, php->delayMs())) + " " + TR("osc.ms") + TR("phase.afterEnd");
         ImVec2 ts = ImGui::CalcTextSize(lbl.c_str());
         dl->AddText(ImVec2(ex - ts.x, p0.y + 6), theme::u32(c.accent), lbl.c_str());
         ex -= ts.x + 12;

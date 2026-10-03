@@ -1,7 +1,21 @@
 #include "model/Category.h"
+#include "util/Localize.h"
 
 namespace evobox
 {
+
+namespace
+{
+struct DefaultCategory { const char* key; const char* english; const char* icon; ImVec4 color; };
+const DefaultCategory kDefaults[] = {
+    { "music",     "Music",     "ph:music-notes",   ImVec4(0.36f, 0.56f, 0.95f, 1.f) },
+    { "effects",   "Effects",   "ph:sparkle",       ImVec4(0.95f, 0.62f, 0.25f, 1.f) },
+    { "voices",    "Voices",    "ph:microphone",    ImVec4(0.85f, 0.35f, 0.55f, 1.f) },
+    { "ambient",   "Ambient",   "ph:cloud",         ImVec4(0.30f, 0.72f, 0.62f, 1.f) },
+    { "interface", "Interface", "ph:cursor-click",  ImVec4(0.62f, 0.55f, 0.90f, 1.f) },
+    { "custom",    "Custom",    "ph:folder",        ImVec4(0.55f, 0.60f, 0.68f, 1.f) },
+};
+} // namespace
 
 Category::Category() : organic::BaseItem(kType, "Category")
 {
@@ -15,6 +29,7 @@ json Category::save() const
 {
     json j = BaseItem::save();
     j["builtin"] = builtin;
+    if (!key.empty()) j["key"] = key;
     return j;
 }
 
@@ -22,6 +37,11 @@ void Category::load(const json& j)
 {
     BaseItem::load(j);
     builtin = jget<bool>(j, "builtin", false);
+    key = jget<std::string>(j, "key", "");
+    // shows saved before the key existed: a builtin category still carrying its English name
+    if (key.empty() && builtin)
+        for (auto& d : kDefaults)
+            if (niceName == d.english) { key = d.key; break; }
 }
 
 // ================================================================ CategoryManager
@@ -38,8 +58,16 @@ Category* CategoryManager::findByName(const std::string& name) const
     return nullptr;
 }
 
+Category* CategoryManager::findByKey(const std::string& key) const
+{
+    if (key.empty()) return nullptr;
+    for (auto& i : items) if (static_cast<Category*>(i.get())->key == key) return static_cast<Category*>(i.get());
+    return nullptr;
+}
+
 Category* CategoryManager::customCategory() const
 {
+    if (auto* c = findByKey("custom")) return c;
     if (auto* c = findByName("Custom")) return c;
     for (auto& i : items) if (static_cast<Category*>(i.get())->builtin) return static_cast<Category*>(i.get());
     return items.empty() ? nullptr : static_cast<Category*>(items[0].get());
@@ -54,20 +82,13 @@ std::vector<Category*> CategoryManager::categories() const
 
 void CategoryManager::seedDefaults()
 {
-    struct Def { const char* name; const char* icon; ImVec4 color; };
-    static const Def defs[] = {
-        { "Music",     "ph:music-notes",   ImVec4(0.36f, 0.56f, 0.95f, 1.f) },
-        { "Effects",   "ph:sparkle",       ImVec4(0.95f, 0.62f, 0.25f, 1.f) },
-        { "Voices",    "ph:microphone",    ImVec4(0.85f, 0.35f, 0.55f, 1.f) },
-        { "Ambient",   "ph:cloud",         ImVec4(0.30f, 0.72f, 0.62f, 1.f) },
-        { "Interface", "ph:cursor-click",  ImVec4(0.62f, 0.55f, 0.90f, 1.f) },
-        { "Custom",    "ph:folder",        ImVec4(0.55f, 0.60f, 0.68f, 1.f) },
-    };
-    for (auto& d : defs)
+    for (auto& d : kDefaults)
     {
-        if (findByName(d.name)) continue;
+        if (findByKey(d.key) || findByName(d.english)) continue;
         auto c = std::make_unique<Category>();
-        c->setNiceName(d.name);
+        // the name is user data from here on: created in the UI language, renamable
+        c->setNiceName(LTR((std::string("category.default.") + d.key).c_str(), d.english));
+        c->key = d.key;
         c->builtin = true;
         c->iconP->setValue(std::string(d.icon), false);
         c->iconP->defaultValue = c->iconP->value;
@@ -80,7 +101,7 @@ void CategoryManager::seedDefaults()
 Category* CategoryManager::addCategoryUndoable(const std::string& name, const std::string& icon, ImVec4 color)
 {
     auto c = std::make_unique<Category>();
-    c->setNiceName(name.empty() ? "New category" : name);
+    c->setNiceName(name.empty() ? LTR("category.newName", "New category") : name);
     if (!icon.empty()) c->iconP->setValue(icon, false);
     c->colorP->setValue(color, false);
     Category* raw = c.get();
@@ -89,7 +110,7 @@ Category* CategoryManager::addCategoryUndoable(const std::string& name, const st
     data["_index"] = indexOf(raw);
     Uid uid = raw->uid;
     CategoryManager* self = this;
-    organic::UndoManager::get().pushDone("Add category",
+    organic::UndoManager::get().pushDone(LTR("undo.addCategory", "Add category"),
         [self, data] { self->addItemFromJson(data); },
         [self, uid]  { self->removeItem(uid); },
         { self });

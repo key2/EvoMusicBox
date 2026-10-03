@@ -193,6 +193,7 @@ int main(int argc, char** argv)
     std::string importDialogDir;          // --import-dialog <dir>: open the Add Sound dialog there (smoke/debug)
     std::vector<std::string> dropPaths;   // --drop <file|dir> (repeatable): simulate an OS file drop on frame 10
     std::string mergePath;                // --merge <show>: File > Merge show (with its OSC) on frame 10
+    std::vector<std::string> openPanels;  // --open-panel <dock name> (repeatable): show a panel, e.g. Settings (smoke/debug)
     bool visibleSmoke = hasArg(argc, argv, "--visible");
     for (int i = 1; i + 1 < argc; i++)
     {
@@ -203,6 +204,7 @@ int main(int argc, char** argv)
         if (strcmp(argv[i], "--import-dialog") == 0) importDialogDir = argv[i + 1];
         if (strcmp(argv[i], "--drop") == 0) dropPaths.push_back(argv[i + 1]);
         if (strcmp(argv[i], "--merge") == 0) mergePath = argv[i + 1];
+        if (strcmp(argv[i], "--open-panel") == 0) openPanels.push_back(argv[i + 1]);
     }
     bool noAudio = hasArg(argc, argv, "--no-audio");
     bool verbose = hasArg(argc, argv, "--verbose");
@@ -214,7 +216,7 @@ int main(int argc, char** argv)
         if (argv[i][0] != '-' && (i == 1 || (strcmp(argv[i - 1], "--frames") != 0 && strcmp(argv[i - 1], "--screenshot") != 0 &&
                                               strcmp(argv[i - 1], "--save-as") != 0 && strcmp(argv[i - 1], "--import") != 0 &&
                                               strcmp(argv[i - 1], "--import-dialog") != 0 && strcmp(argv[i - 1], "--drop") != 0 &&
-                                              strcmp(argv[i - 1], "--merge") != 0))) openPath = argv[i];
+                                              strcmp(argv[i - 1], "--merge") != 0 && strcmp(argv[i - 1], "--open-panel") != 0))) openPath = argv[i];
 
     crash::install(paths::configDir().string(),
                    std::string("EvoMusicBox ") + EVOBOX_VERSION + " built " __DATE__ " " __TIME__ + " (" + IMGUI_VERSION + ")");
@@ -242,6 +244,10 @@ int main(int argc, char** argv)
     // Load the UI translations and select the saved language before any string is drawn.
     I18n::get().init();
     I18n::get().setLanguage(app.prefs.language);
+    // The Application constructor seeded its default project before the catalogue existed (members
+    // are built first); redo it now so the default categories carry the UI language. Nothing has
+    // been opened or edited yet, and a project opened below replaces it anyway.
+    app.project.resetToDefaults();
     int ww = app.prefs.windowW > 400 ? app.prefs.windowW : 1600;
     int wh = app.prefs.windowH > 300 ? app.prefs.windowH : 940;
     GLFWwindow* window = glfwCreateWindow(ww, wh, "EvoMusicBox", nullptr, nullptr);
@@ -298,6 +304,8 @@ int main(int argc, char** argv)
     if (demoGifts) demo::seedDemoCatalog(app);
     if (!importPaths.empty()) app.importer.importFiles(importPaths, app.selectedCategoryUid);
     if (!importDialogDir.empty()) { shell.importDialogStartPath = importDialogDir; shell.requestImportDialog(); }
+    for (const std::string& name : openPanels)
+        if (auto* p = app.dock.find(name)) p->open = true; else OLOGW("UI", "--open-panel: no panel named '" << name << "'");
     if (perfMode) shell.setPerformanceMode(true);
     if (hasArg(argc, argv, "--crash-test")) { volatile int* p = nullptr; *p = 42; } // verifies the crash reporter
     {

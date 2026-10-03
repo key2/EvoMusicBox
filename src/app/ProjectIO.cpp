@@ -1,6 +1,7 @@
 #include "app/ProjectIO.h"
 #include "media/ClipEncoder.h"
 #include "util/Hash.h"
+#include "util/Localize.h"
 #include "util/Paths.h"
 #include "util/Strings.h"
 #include "util/ZipFile.h"
@@ -181,7 +182,7 @@ std::string ProjectIO::workDirFor(const std::string& path)
 bool ProjectIO::saveArchive(Project& p, const std::string& archivePathIn, std::string* err)
 {
     std::string archivePath = archivePathFromChoice(archivePathIn);
-    if (archivePath.empty()) { if (err) *err = "no project path"; return false; }
+    if (archivePath.empty()) { if (err) *err = LTR("error.noProjectPath", "no project path"); return false; }
     std::string workDir = archiveWorkDir(archivePath);
     // reuse the working folder when saving over the archive we came from (clips are already there)
     if (!save(p, workDir, err)) return false;
@@ -199,8 +200,8 @@ bool ProjectIO::saveArchive(Project& p, const std::string& archivePathIn, std::s
 bool ProjectIO::loadArchive(Project& p, const std::string& archivePath, std::string* err)
 {
     std::error_code ec;
-    if (!fs::is_regular_file(archivePath, ec)) { if (err) *err = "cannot open " + archivePath; return false; }
-    if (!zipfile::looksLikeZip(archivePath)) { if (err) *err = archivePath + " is not a .liv show file (not a zip archive)"; return false; }
+    if (!fs::is_regular_file(archivePath, ec)) { if (err) *err = str::format(LTR("error.cannotOpen", "cannot open %s"), archivePath.c_str()); return false; }
+    if (!zipfile::looksLikeZip(archivePath)) { if (err) *err = str::format(LTR("error.notLivFile", "%s is not a .liv show file (not a zip archive)"), archivePath.c_str()); return false; }
     std::string projectJson;
     if (!zipfile::readEntry(archivePath, kProjectFile, projectJson, err)) return false;
     std::string workDir = archiveWorkDir(archivePath);
@@ -223,7 +224,7 @@ bool ProjectIO::open(Project& p, const std::string& path, std::string* err)
         // "MyShow" typed without the extension
         std::string alt = bundleDirFromChoice(path);
         if (isBundle(alt)) bp = alt;
-        else { if (err) *err = "'" + path + "' is not an EvoMusicBox show (.liv) or project folder"; return false; }
+        else { if (err) *err = str::format(LTR("error.notShowOrFolder", "'%s' is not an EvoMusicBox show (.liv) or project folder"), path.c_str()); return false; }
     }
     return load(p, bp.string(), err);
 }
@@ -233,9 +234,9 @@ bool ProjectIO::writeJsonAtomic(const std::string& path, const nlohmann::json& j
     std::string tmp = path + ".tmp";
     {
         std::ofstream f(tmp, std::ios::binary);
-        if (!f.is_open()) { if (err) *err = "cannot write " + tmp; return false; }
+        if (!f.is_open()) { if (err) *err = str::format(LTR("error.cannotWrite", "cannot write %s"), tmp.c_str()); return false; }
         f << j.dump(2);
-        if (!f.good()) { if (err) *err = "write error on " + tmp; return false; }
+        if (!f.good()) { if (err) *err = str::format(LTR("error.writeError", "write error on %s"), tmp.c_str()); return false; }
     }
     return paths::replaceFile(tmp, path, err);
 }
@@ -243,19 +244,19 @@ bool ProjectIO::writeJsonAtomic(const std::string& path, const nlohmann::json& j
 bool ProjectIO::readJson(const std::string& path, nlohmann::json& out, std::string* err)
 {
     std::ifstream f(path, std::ios::binary);
-    if (!f.is_open()) { if (err) *err = "cannot open " + path; return false; }
+    if (!f.is_open()) { if (err) *err = str::format(LTR("error.cannotOpen", "cannot open %s"), path.c_str()); return false; }
     try { f >> out; }
-    catch (const std::exception& ex) { if (err) *err = std::string("invalid JSON in ") + path + ": " + ex.what(); return false; }
+    catch (const std::exception& ex) { if (err) *err = str::format(LTR("error.invalidJson", "invalid JSON in %s: %s"), path.c_str(), ex.what()); return false; }
     return true;
 }
 
 bool ProjectIO::save(Project& p, const std::string& bundleDirIn, std::string* err)
 {
     std::string bundleDir = bundleDirFromChoice(bundleDirIn);
-    if (bundleDir.empty()) { if (err) *err = "no project path"; return false; }
+    if (bundleDir.empty()) { if (err) *err = LTR("error.noProjectPath", "no project path"); return false; }
     std::error_code ec;
     fs::create_directories(fs::path(bundleDir) / "clips", ec);
-    if (ec) { if (err) *err = "cannot create " + bundleDir + ": " + ec.message(); return false; }
+    if (ec) { if (err) *err = str::format(LTR("error.cannotCreate", "cannot create %s: %s"), bundleDir.c_str(), ec.message().c_str()); return false; }
 
     // move / copy rendered clips from their current location into the bundle
     std::string oldClips = clipsDir(p);
@@ -366,7 +367,7 @@ bool ProjectIO::load(Project& p, const std::string& bundleDirIn, std::string* er
     if (!readJson(file, j, err)) return false;
     if (!j.is_object() || j.value("app", "") != "EvoMusicBox")
     {
-        if (err) *err = file + " is not an EvoMusicBox project";
+        if (err) *err = str::format(LTR("error.notProject", "%s is not an EvoMusicBox project"), file.c_str());
         return false;
     }
     // paths first: Project::load notifies onAnyChange, and listeners resolve clips against bundleDir

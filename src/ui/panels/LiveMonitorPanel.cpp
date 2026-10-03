@@ -24,7 +24,7 @@ void LiveMonitorPanel::drawTimeline()
         EmptyState(TR("live.emptyTitle"), TR("live.emptySubtitle"), ICON_PH_TIMER);
         return;
     }
-    std::string title = g ? (ICON_PH_GIFT "  " + g->displayName()) : (std::string(roomEventIcon(r->kind)) + "  " + r->niceName);
+    std::string title = g ? (ICON_PH_GIFT "  " + g->displayName()) : (std::string(roomEventIcon(r->kind)) + "  " + roomEventLabel(r->kind));
     ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.1f);
     ImGui::TextUnformatted(title.c_str());
     ImGui::PopFont();
@@ -87,8 +87,8 @@ void LiveMonitorPanel::drawFeed()
         if (!showComments_ && e.type == LiveEventType::Comment) continue;
         if (!showLikes_ && e.type == LiveEventType::Like) continue;
         if (!showJoins_ && e.type == LiveEventType::Join) continue;
-        std::string line = e.summary();
-        if (filter_[0] && !str::icontains(line, filter_) && !str::icontains(liveEventTypeName(e.type), filter_)) continue;
+        std::string line = liveEventLabel(e);
+        if (filter_[0] && !str::icontains(line, filter_) && !str::icontains(e.summary(), filter_) && !str::icontains(liveEventTypeName(e.type), filter_)) continue;
         ImVec4 col = th.textDim;
         const char* icon = ICON_PH_DOT_OUTLINE;
         switch (e.type)

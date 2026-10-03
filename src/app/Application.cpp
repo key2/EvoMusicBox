@@ -5,6 +5,7 @@
 #include "media/ImageWriter.h"
 #include "util/Hash.h"
 #include "util/Paths.h"
+#include "util/Localize.h"
 #include "util/Strings.h"
 #include "util/TimeFormat.h"
 #include <algorithm>
@@ -182,9 +183,15 @@ void Application::setStatus(const std::string& msg)
     statusTime = now_;
 }
 
+std::string Application::displayTitle() const
+{
+    // the model keeps the English placeholder (tests, logs); the UI shows it in its language
+    return hasBundle() ? project.title() : std::string(LTR("project.untitled", "Untitled"));
+}
+
 std::string Application::windowTitle() const
 {
-    std::string t = project.title();
+    std::string t = displayTitle();
     if (project.dirty()) t += " *";
     return t + " — EvoMusicBox";
 }
@@ -324,7 +331,7 @@ bool Application::setStickerFromImage(Sound& s, const std::string& imagePath, st
 
 bool Application::setStickerFromImage(Sound& s, const RgbaImage& image, std::string* err)
 {
-    if (image.empty()) { if (err) *err = "empty image"; return false; }
+    if (image.empty()) { if (err) *err = LTR("error.emptyImage", "empty image"); return false; }
     RgbaImage small = ImageWriter::fitToEdge(image, 256);
     // content-addressed file name: duplicates share one file, GC on save removes unused ones
     std::string name = sha1Hex(small.pixels.data(), small.pixels.size()).substr(0, 16) + ".png";
@@ -471,7 +478,7 @@ void Application::pumpConversions()
     }
     if (conversionActive_ == 0 && convertedClips_ > 0)
     {
-        setStatus("Converted " + std::to_string(convertedClips_) + " clip(s) to MP3 - save the show to shrink the file");
+        setStatus(str::format(LTR("status.convertedClips", "Converted %d clip(s) to MP3 - save the show to shrink the file"), convertedClips_));
         convertedClips_ = 0;
     }
 }
@@ -586,7 +593,7 @@ void Application::relinkSource(Sound& s, const std::string& newPath)
         notifyStructureChanged(sp);
         self->requestRender(*sp);
     };
-    organic::UndoManager::get().perform("Relink media", [apply, newRef] { apply(newRef); }, [apply, oldRef] { apply(oldRef); }, { sp });
+    organic::UndoManager::get().perform(LTR("undo.relinkMedia", "Relink media"), [apply, newRef] { apply(newRef); }, [apply, oldRef] { apply(oldRef); }, { sp });
     OLOG("Media", "Relinked '" << s.niceName << "' to " << newPath);
 }
 
@@ -651,7 +658,7 @@ void Application::newProject()
     library.clear();
     releaseStickerTextures();
     lastAutosave_ = now_;
-    setStatus("New project");
+    setStatus(LTR("status.newProject", "New project"));
 }
 
 bool Application::openProject(const std::string& path, std::string* err)
@@ -674,7 +681,7 @@ bool Application::openProject(const std::string& path, std::string* err)
     prefs.addRecent(projectLocation());
     prefs.save(paths::prefsFile().string());
     lastAutosave_ = now_;
-    setStatus("Opened " + project.title());
+    setStatus(str::format(LTR("status.opened", "Opened %s"), project.title().c_str()));
     return true;
 }
 
@@ -686,7 +693,7 @@ bool Application::mergeProject(const MergeSource& src, const MergeOptions& opts,
     // added; this catches any it could not see yet
     loadAllClips();
     selectedCategoryUid = 0; // "All Sounds": the merged tiles are visible right away
-    setStatus("Merged '" + src.title + "': " + rep.summary());
+    setStatus(str::format(LTR("status.merged", "Merged '%s': %s"), src.title.c_str(), rep.summary().c_str()));
     if (report) *report = rep;
     return true;
 }
@@ -698,7 +705,7 @@ std::string Application::projectLocation() const
 
 bool Application::saveProject(std::string* err)
 {
-    if (!hasBundle()) { if (err) *err = "choose a location first"; return false; }
+    if (!hasBundle()) { if (err) *err = LTR("error.chooseLocationFirst", "choose a location first"); return false; }
     return saveProjectAs(projectLocation(), err);
 }
 
@@ -712,7 +719,7 @@ bool Application::saveProjectAs(const std::string& path, std::string* err)
     if (!ok) return false;
     prefs.addRecent(projectLocation());
     prefs.save(paths::prefsFile().string());
-    setStatus("Saved " + project.title() + (project.isArchive() ? " (" + str::fileName(project.archivePath) + ")" : ""));
+    setStatus(str::format(LTR("status.saved", "Saved %s"), project.title().c_str()) + (project.isArchive() ? " (" + str::fileName(project.archivePath) + ")" : ""));
     return true;
 }
 
@@ -806,7 +813,7 @@ void Application::liveConnect(const std::string& usernameIn)
     tiktok.connect(username, o);
 #else
     (void)usernameIn;
-    setStatus("Built without TikTok support");
+    setStatus(LTR("status.noTikTokBuild", "Built without TikTok support"));
 #endif
 }
 

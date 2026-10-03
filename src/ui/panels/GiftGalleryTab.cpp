@@ -72,7 +72,7 @@ void GiftGalleryTab::header()
     if (app_.catalog.lastUpdateUnix)
     {
         long long nowUnix = (long long)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        catInfo += evobox::trFmt("gift.catalogUpdated", formatAgo((double)(nowUnix - app_.catalog.lastUpdateUnix)));
+        catInfo += evobox::trFmt("gift.catalogUpdated", agoLabel((double)(nowUnix - app_.catalog.lastUpdateUnix)));
     }
     float rw = ImGui::CalcTextSize(catInfo.c_str()).x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x * 2;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - rw);

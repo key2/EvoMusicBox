@@ -142,7 +142,7 @@ void SoundboardTab::contextMenu(Sound& s)
     if (ImGui::MenuItem((std::string(ICON_PH_TRASH "  ") + TR("soundboard.ctx.delete")).c_str()))
     {
         Sound* sp = &s;
-        confirm.open("Delete '" + s.niceName + "'?", "The tile and its OSC commands are removed (undo with Ctrl+Z).",
+        confirm.open(evobox::trFmt("inspector.deleteSound.title", s.niceName), TR("inspector.deleteSound.body"),
                      [this, sp] { app_.deleteSounds({ sp }); });
     }
 }

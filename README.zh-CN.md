@@ -88,6 +88,55 @@ CMake 选项：
 `build/generated/IconsPhosphor.h` 由 `tools/gen_phosphor_icons.py` 根据 Phosphor 的 `style.css` 生成
 （没有 Python 时 CMake 会回退到纯 CMake 的生成器）。
 
+## 语言 / 翻译
+
+界面提供英语、俄语和中文，可在运行时通过 **语言** 菜单（或 设置 ▸ 界面）切换。所选语言保存在
+prefs（`language`）中，启动时恢复。
+
+翻译**不是**硬编码的：所有界面字符串都放在 `assets/lang/<code>.json`（`en.json`、`ru.json`、`zh.json`）
+这组扁平的 JSON 目录里，以稳定的点分标识符为键，例如 `menu.file.save`。代码通过 `TR("key")` /
+`trFmt("key", arg)`（见 `src/ui/I18n.*`）查找；缺失的键会回退到英语，再回退到键本身，因此不完整的翻译
+永远不会导致崩溃。在界面层之下产生的文本 —— 新建项目的默认名称、撤销历史标签、状态栏与错误信息 ——
+通过 `LTR("key", "English")`（`src/util/Localize.h`）处理：英文留在代码中作为回退，界面在启动时安装
+翻译器。由通用控件绘制的参数（设置、片段与礼物设置）通过 `LocalizeParam()` 获得标签，内置的文件对话框
+的文本则在绘制时翻译（`src/ui/IGFDGlue.*`）。
+
+要**修改措辞**，直接编辑对应 `*.json` 中的值 —— 不需要重新构建逻辑，文件在启动时读取（它会由常规的
+资源部署复制到可执行文件旁边 / macOS 包的 `Contents/Resources/` 中）。
+
+要**添加一种语言**，在其他文件旁放一个新的 `assets/lang/<code>.json`（复制 `en.json`，保留键，翻译值，
+把 `"language.native"` 设为该语言自己的名称）。它会自动出现在语言菜单中。请保持 printf 占位符
+（`%s`、`%d`、`%.1f`……）完整且符合字符串允许的形式；格式参数是按位置的。
+
+字体：英语/俄语由 Roboto 渲染，中文（以及西里尔字母的回退）由内置的 `NotoSansCJKsc-Regular.otf` 渲染，
+它在 `src/ui/Fonts.cpp` 中合并到 Roboto 之上（ImGui 1.92 按需光栅化字形，所以合并只为实际绘制的字形
+占用图集空间）。
+
+保存在演出文件中的标识符在磁盘上保持英文，仅在显示时翻译：OSC 阶段名（`At play (start)`、`On gift`、
+`Stop`……）、房间事件类型以及默认类别（新演出会以界面语言创建类别；之后它们是可重命名的用户数据，
+"自定义"类别通过持久化的键而非名称来识别）。有意保留英文的内容：礼物名称、音频设备名称、OSC 地址等数据、
+`Localhost` 目标，以及底层诊断信息（解码器与网络错误、`imgui_organic` 内部生成的撤销标签）。
+
+## macOS 构建（自包含的 .app）
+
+上面的普通 `cmake`/`ninja` 构建在 macOS 上同样可用（GLFW 会构建其 Cocoa 后端；应用请求 OpenGL 3.2 Core
+profile，这也是 macOS 唯一提供的）。`tools/macos/build.sh` 在其基础上生成一个**可随意移动**的
+`EvoMusicBox.app`，无需 Homebrew 即可在干净的 Mac 上运行：
+
+```bash
+brew install cmake ninja ffmpeg protobuf           # glfw 已内置
+tools/macos/build.sh                                # configure + build + ctest + 打包 + zip
+#   -> build-mac/dist/EvoMusicBox-<version>-macos-<arch>.zip
+tools/macos/build.sh --no-tiktok                    # 仅音效板 + OSC
+```
+
+脚本会把二进制链接的所有非系统 dylib（FFmpeg、protobuf、abseil、brotli、zstd、libidn2……）复制到
+`EvoMusicBox.app/Contents/Frameworks`，用 `install_name_tool` 把它们的 install name 改写为 `@rpath`，
+把 `assets/`、`fonts/` 与 `tiktok-js/` 放入 `Contents/Resources`，写入 `Info.plist`（含 `.liv` 文档类型），
+把 `musicbox.ico` 转换为 `.icns`，并对包进行 ad-hoc 签名。在 arm64 主机上构建为 arm64（Apple Silicon），
+在 Intel 主机上为 x86_64；目前还没有通用二进制。`.app` **未经**公证，因此 Gatekeeper 会在首次启动时
+询问 —— 右键 → 打开，或执行 `xattr -dr com.apple.quarantine EvoMusicBox.app`。
+
 ## Windows 构建（在 Linux 上交叉编译：安装程序 + zip）
 
 现成的安装包发布在 [Releases 页面](https://github.com/key2/EvoMusicBox/releases)（二进制文件未做代码签名，
@@ -156,7 +205,8 @@ Windows 上尚未实现：崩溃报告（`CrashHandler` 仅支持 POSIX）。Tik
 
 常用参数：`--no-audio`（空音频后端）、`--demo-gifts`（离线礼物目录）、`--verbose`（把日志镜像到
 stderr）、`--frames N --screenshot out.png`（无头冒烟运行，以 60 Hz 步进）、`--save-as Show.liv`
-（冒烟运行结束时保存）、`--new`、`--import <file>`、`--performance`。
+（冒烟运行结束时保存）、`--new`、`--import <file>`、`--open-panel <名称>`（在冒烟运行中显示某个
+停靠面板，例如 `Settings`）、`--performance`。
 
 键盘：`Space` 切换所选 tile（再次触发音效）、`Enter` 播放、`Esc` 停止一切并取消待执行的 OSC 定时器、
 `Ctrl+Space` 模拟所选礼物 / 直播间事件（或从 Clip Editor 播放片段选区 —— 与 tile 使用同一个 voice）、

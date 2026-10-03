@@ -1,4 +1,5 @@
 #include "model/OscTarget.h"
+#include "util/Localize.h"
 
 namespace evobox
 {
@@ -90,7 +91,7 @@ void OscTargetManager::ensureLocalhost()
 OscTarget* OscTargetManager::addTargetUndoable(const std::string& name, const std::string& host, int port)
 {
     auto item = std::make_unique<OscTarget>();
-    item->setNiceName(name.empty() ? "New target" : name);
+    item->setNiceName(name.empty() ? LTR("osc.newTargetName", "New target") : name);
     item->hostP->setValue(host.empty() ? std::string("127.0.0.1") : host, false);
     item->portP->setValue(port > 0 ? port : OscTarget::kDefaultPort, false);
     OscTarget* raw = item.get();
@@ -99,7 +100,7 @@ OscTarget* OscTargetManager::addTargetUndoable(const std::string& name, const st
     data["_index"] = indexOf(raw);
     Uid uid = raw->uid;
     OscTargetManager* self = this;
-    organic::UndoManager::get().pushDone("Add OSC target",
+    organic::UndoManager::get().pushDone(LTR("undo.addOscTarget", "Add OSC target"),
         [self, data] { self->addItemFromJson(data); },
         [self, uid]  { self->removeItem(uid); },
         { self });
@@ -119,7 +120,7 @@ void OscTargetManager::setDefaultUndoable(OscTarget* t)
         self->repairDefaultInvariant();
         notifyStructureChanged(self);
     };
-    organic::UndoManager::get().perform("Set default OSC target",
+    organic::UndoManager::get().perform(LTR("undo.setDefaultOscTarget", "Set default OSC target"),
         [apply, newUid] { apply(newUid); },
         [apply, oldUid] { apply(oldUid); },
         { self });
@@ -139,7 +140,7 @@ void OscTargetManager::removeTargetUndoable(OscTarget* t, const std::function<in
     // surprising after an intermediate edit); undo re-adds the target with its uid, and a
     // second "retarget" pass would be needed to restore references — kept simple on purpose.
     (void)n;
-    organic::UndoManager::get().pushDone("Delete OSC target",
+    organic::UndoManager::get().pushDone(LTR("undo.deleteOscTarget", "Delete OSC target"),
         [self, uid, retargetAll] { if (retargetAll) retargetAll(uid, 0); self->removeItem(uid); },
         [self, data] { self->addItemFromJson(data); },
         { self });

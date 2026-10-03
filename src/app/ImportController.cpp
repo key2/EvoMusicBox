@@ -1,6 +1,7 @@
 #include "app/ImportController.h"
 #include "app/Application.h"
 #include "app/ProjectIO.h"
+#include "util/Localize.h"
 #include "util/Strings.h"
 #include <filesystem>
 
@@ -9,16 +10,22 @@ namespace evobox
 
 ImportController::ImportController(Application& app) : app_(app) {}
 
+// ImGuiFileDialog filter syntax: "<label>{.ext,...},..." — the labels are what the dialog's filter
+// combo shows, so they follow the UI language (rebuilt on each call; the dialog copies them).
 const char* ImportController::mediaFilters()
 {
-    return "Audio & video{.wav,.mp3,.flac,.ogg,.oga,.opus,.aiff,.aif,.m4a,.aac,.wma,.mp4,.m4v,.mov,.mkv,.webm,.avi,.mts,.ts,.flv},"
-           "Audio{.wav,.mp3,.flac,.ogg,.oga,.opus,.aiff,.aif,.m4a,.aac,.wma},"
-           "Video{.mp4,.m4v,.mov,.mkv,.webm,.avi,.mts,.ts,.flv},.*";
+    static std::string s;
+    s = std::string(LTR("import.filter.audioVideo", "Audio & video")) + "{.wav,.mp3,.flac,.ogg,.oga,.opus,.aiff,.aif,.m4a,.aac,.wma,.mp4,.m4v,.mov,.mkv,.webm,.avi,.mts,.ts,.flv}," +
+        LTR("import.filter.audio", "Audio") + "{.wav,.mp3,.flac,.ogg,.oga,.opus,.aiff,.aif,.m4a,.aac,.wma}," +
+        LTR("import.filter.video", "Video") + "{.mp4,.m4v,.mov,.mkv,.webm,.avi,.mts,.ts,.flv},.*";
+    return s.c_str();
 }
 
 const char* ImportController::imageFilters()
 {
-    return "Images{.png,.jpg,.jpeg,.webp,.bmp,.gif,.tga,.tif,.tiff},.*";
+    static std::string s;
+    s = std::string(LTR("import.filter.images", "Images")) + "{.png,.jpg,.jpeg,.webp,.bmp,.gif,.tga,.tif,.tiff},.*";
+    return s.c_str();
 }
 
 bool ImportController::looksLikeVideo(const std::string& path)
@@ -62,7 +69,7 @@ void ImportController::importFiles(const std::vector<std::string>& paths, Uid ca
         app_.media.requestDecode(p, id);
         OLOG("Media", "Importing " << p);
     }
-    if (!paths.empty()) app_.setStatus("Decoding " + std::to_string(paths.size()) + " file(s)...");
+    if (!paths.empty()) app_.setStatus(str::format(LTR("status.decodingFiles", "Decoding %d file(s)..."), (int)paths.size()));
 }
 
 bool ImportController::onDecoded(const MediaEvent& e)
@@ -75,7 +82,7 @@ bool ImportController::onDecoded(const MediaEvent& e)
     {
         lastError = e.error;
         OLOGW("Media", "Import failed for " << pend.path << ": " << e.error);
-        app_.setStatus("Import failed: " + e.error);
+        app_.setStatus(str::format(LTR("status.importFailed", "Import failed: %s"), e.error.c_str()));
         return true;
     }
     app_.library.put(e.asset);
@@ -94,7 +101,7 @@ bool ImportController::onDecoded(const MediaEvent& e)
     // The sound exists right away (UI request: no "Save Clip" step). Selecting the last one of a
     // batch keeps the Clip Editor from jumping between files while a folder is being imported.
     Sound* s = createSound(d, pending_.empty());
-    if (s) app_.setStatus("Added '" + s->niceName + "' — trim it in the Clip Editor");
+    if (s) app_.setStatus(str::format(LTR("status.addedSound", "Added '%s' — trim it in the Clip Editor"), s->niceName.c_str()));
     return true;
 }
 
@@ -102,7 +109,7 @@ Sound* ImportController::createSound(const ClipDraft& d, bool select)
 {
     if (!d.asset) return nullptr;
     auto s = std::make_unique<Sound>();
-    s->setNiceName(d.name.empty() ? "New sound" : d.name);
+    s->setNiceName(d.name.empty() ? LTR("sound.newName", "New sound") : d.name);
     s->stickerP->setValue(d.sticker, false);
     s->colorP->setValue(d.color, false);
     s->categoryUid = d.categoryUid;
@@ -135,7 +142,7 @@ Sound* ImportController::duplicateSound(Sound& src)
     json j = src.save();
     j["uid"] = 0;
     j.erase("_index");
-    j["niceName"] = src.niceName + " Copy";
+    j["niceName"] = src.niceName + LTR("sound.copySuffix", " Copy");
     j.erase("clipFile");
     auto s = std::make_unique<Sound>();
     s->load(j);

@@ -248,7 +248,7 @@ void NavigatorPanel::drawGiftNavigator()
         bool sel = a->isSelected();
         float pl = pulse(a->rt.lastPulseTime, app_.now(), 0.6);
         if (pl > 0) ImGui::PushStyleColor(ImGuiCol_Header, theme::withAlpha(th.live, 0.35f * pl));
-        std::string lbl = std::string(roomEventIcon(a->kind)) + "  " + a->niceName;
+        std::string lbl = std::string(roomEventIcon(a->kind)) + "  " + roomEventLabel(a->kind);
         size_t n = a->actions().commandCount();
         if (n || a->soundUid) lbl += "   " + std::string(n ? std::to_string(n) : "") + (a->soundUid ? " " ICON_PH_SPEAKER_HIGH : "");
         if (a->rt.active) lbl += "  " ICON_PH_TIMER;
@@ -256,7 +256,7 @@ void NavigatorPanel::drawGiftNavigator()
         if (pl > 0) ImGui::PopStyleColor();
         if (ImGui::BeginPopupContextItem("##rectx"))
         {
-            if (ImGui::MenuItem(ICON_PH_PLAY "  Simulate")) app_.simulateRoomEvent(a->kind);
+            if (ImGui::MenuItem((std::string(ICON_PH_PLAY "  ") + TR("gift.ctx.simulate")).c_str())) app_.simulateRoomEvent(a->kind);
             ImGui::EndPopup();
         }
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))

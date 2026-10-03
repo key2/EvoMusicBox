@@ -45,6 +45,8 @@ public:
 
     // Translate a key. Returns the active string, else English, else the key itself.
     const std::string& tr(const std::string& key) const;
+    // True when the active catalogue or the English fallback defines the key.
+    bool has(const std::string& key) const;
 
 private:
     I18n() = default;

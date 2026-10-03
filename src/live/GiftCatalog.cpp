@@ -1,4 +1,5 @@
 #include "live/GiftCatalog.h"
+#include "util/Localize.h"
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -68,7 +69,7 @@ bool GiftCatalog::mergeFromEvent(const LiveEvent& e)
     {
         GiftInfo g;
         g.id = e.giftId;
-        g.name = e.giftName.empty() ? ("Gift " + std::to_string(e.giftId)) : e.giftName;
+        g.name = e.giftName.empty() ? (std::string(LTR("gift.fallbackNamePrefix", "Gift ")) + std::to_string(e.giftId)) : e.giftName;
         g.diamondCount = e.diamondCount;
         g.type = e.giftType;
         g.iconUrl = e.giftIconUrl;

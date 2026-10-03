@@ -2,6 +2,7 @@
 #include "app/ProjectIO.h"
 #include "media/ClipEncoder.h"
 #include "model/ModelCommon.h"
+#include "util/Localize.h"
 #include "util/Paths.h"
 #include "util/Strings.h"
 #include "util/ZipFile.h"
@@ -133,7 +134,7 @@ bool readSourceFile(const MergeSource& src, const std::string& rel, std::string&
 {
     if (src.archive) return zipfile::readEntry(src.path, rel, bytes, err);
     std::ifstream f(fs::path(src.dir) / rel, std::ios::binary);
-    if (!f.is_open()) { if (err) *err = "cannot read " + (fs::path(src.dir) / rel).string(); return false; }
+    if (!f.is_open()) { if (err) *err = str::format(LTR("error.cannotRead", "cannot read %s"), (fs::path(src.dir) / rel).string().c_str()); return false; }
     bytes.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
     return true;
 }
@@ -145,9 +146,9 @@ bool writeFile(const fs::path& dst, const std::string& bytes, std::string* err)
     std::string tmp = dst.string() + ".merge.tmp";
     {
         std::ofstream f(tmp, std::ios::binary);
-        if (!f.is_open()) { if (err) *err = "cannot write " + dst.string(); return false; }
+        if (!f.is_open()) { if (err) *err = str::format(LTR("error.cannotWrite", "cannot write %s"), dst.string().c_str()); return false; }
         f.write(bytes.data(), (std::streamsize)bytes.size());
-        if (!f.good()) { fs::remove(tmp, ec); if (err) *err = "write error on " + dst.string(); return false; }
+        if (!f.good()) { fs::remove(tmp, ec); if (err) *err = str::format(LTR("error.writeError", "write error on %s"), dst.string().c_str()); return false; }
     }
     return paths::replaceFile(tmp, dst, err);
 }
@@ -184,27 +185,31 @@ void addLoaded(organic::BaseManager& m, const json& j)
     m.addItem(std::move(item), -1);
 }
 
-void plural(std::string& out, int n, const char* one, const char* many)
+// `oneFmt` / `manyFmt` carry the count ("%d sound" / "%d sounds"), so a language can put the
+// number where its grammar wants it ("звуки: %d")
+void plural(std::string& out, int n, const char* oneFmt, const char* manyFmt)
 {
     if (n <= 0) return;
     if (!out.empty()) out += ", ";
-    out += std::to_string(n) + " " + (n == 1 ? one : many);
+    out += str::format(n == 1 ? oneFmt : manyFmt, n);
 }
 
 } // namespace
 
 std::string MergeReport::summary() const
 {
+    // "3 sounds, 1 new category; 2 clip(s) not in the show ..." — each noun pair follows the UI
+    // language through util/Localize.h (English in the tests, which assert on this text)
     std::string s;
-    plural(s, sounds, "sound", "sounds");
-    plural(s, categories, "new category", "new categories");
-    plural(s, commands, "OSC command", "OSC commands");
-    plural(s, targets, "new target", "new targets");
-    plural(s, giftActions, "gift action", "gift actions");
-    plural(s, roomEvents, "room event", "room events");
-    if (giftsSkipped) s += (s.empty() ? "" : "; ") + std::to_string(giftsSkipped) + " gift action(s) skipped (already configured)";
-    if (clipsMissing) s += (s.empty() ? "" : "; ") + std::to_string(clipsMissing) + " clip(s) not in the show (re-rendered from the source when available)";
-    return s.empty() ? "nothing to merge" : s;
+    plural(s, sounds, LTR("merge.summary.sound", "%d sound"), LTR("merge.summary.sounds", "%d sounds"));
+    plural(s, categories, LTR("merge.summary.category", "%d new category"), LTR("merge.summary.categories", "%d new categories"));
+    plural(s, commands, LTR("merge.summary.command", "%d OSC command"), LTR("merge.summary.commands", "%d OSC commands"));
+    plural(s, targets, LTR("merge.summary.target", "%d new target"), LTR("merge.summary.targets", "%d new targets"));
+    plural(s, giftActions, LTR("merge.summary.giftAction", "%d gift action"), LTR("merge.summary.giftActions", "%d gift actions"));
+    plural(s, roomEvents, LTR("merge.summary.roomEvent", "%d room event"), LTR("merge.summary.roomEvents", "%d room events"));
+    if (giftsSkipped) s += (s.empty() ? "" : "; ") + str::format(LTR("merge.summary.giftsSkipped", "%d gift action(s) skipped (already configured)"), giftsSkipped);
+    if (clipsMissing) s += (s.empty() ? "" : "; ") + str::format(LTR("merge.summary.clipsMissing", "%d clip(s) not in the show (re-rendered from the source when available)"), clipsMissing);
+    return s.empty() ? LTR("merge.summary.nothing", "nothing to merge") : s;
 }
 
 bool ProjectMerge::inspect(const std::string& path, MergeSource& out, std::string* err)
@@ -215,12 +220,12 @@ bool ProjectMerge::inspect(const std::string& path, MergeSource& out, std::strin
     out.path = path;
     if (ProjectIO::isArchivePath(path) || (fs::is_regular_file(path, ec) && zipfile::looksLikeZip(path)))
     {
-        if (!fs::is_regular_file(path, ec)) return fail("cannot open " + path);
-        if (!zipfile::looksLikeZip(path)) return fail(path + " is not a .liv show file (not a zip archive)");
+        if (!fs::is_regular_file(path, ec)) return fail(str::format(LTR("error.cannotOpen", "cannot open %s"), path.c_str()));
+        if (!zipfile::looksLikeZip(path)) return fail(str::format(LTR("error.notLivFile", "%s is not a .liv show file (not a zip archive)"), path.c_str()));
         std::string text;
         if (!zipfile::readEntry(path, ProjectIO::kProjectFile, text, err)) return false;
         try { out.project = json::parse(text); }
-        catch (const std::exception& ex) { return fail("cannot parse " + path + ": " + ex.what()); }
+        catch (const std::exception& ex) { return fail(str::format(LTR("error.cannotParse", "cannot parse %s: %s"), path.c_str(), ex.what())); }
         out.archive = true;
         out.title = fs::path(path).stem().string();
     }
@@ -231,7 +236,7 @@ bool ProjectMerge::inspect(const std::string& path, MergeSource& out, std::strin
         {
             std::string alt = ProjectIO::bundleDirFromChoice(path);
             if (ProjectIO::isBundle(alt)) dir = alt;
-            else return fail("'" + path + "' is not an EvoMusicBox show (.liv) or project folder");
+            else return fail(str::format(LTR("error.notShowOrFolder", "'%s' is not an EvoMusicBox show (.liv) or project folder"), path.c_str()));
         }
         if (!ProjectIO::readJson((fs::path(dir) / ProjectIO::kProjectFile).string(), out.project, err)) return false;
         out.dir = dir;
@@ -240,7 +245,7 @@ bool ProjectMerge::inspect(const std::string& path, MergeSource& out, std::strin
     if (!out.project.is_object() || out.project.value("app", "") != "EvoMusicBox")
     {
         out.project = json();
-        return fail(path + " is not an EvoMusicBox show");
+        return fail(str::format(LTR("error.notShow", "%s is not an EvoMusicBox show"), path.c_str()));
     }
     out.sounds = (int)itemsOf(out.project, "sounds").size();
     out.categories = (int)itemsOf(out.project, "categories").size();
@@ -261,7 +266,7 @@ bool ProjectMerge::merge(Project& p, const std::string& path, const MergeOptions
 bool ProjectMerge::merge(Project& p, const MergeSource& src, const MergeOptions& opts, MergeReport* report, std::string* err)
 {
     Fail fail{ err };
-    if (!src.valid()) return fail("nothing to merge");
+    if (!src.valid()) return fail(LTR("merge.summary.nothing", "nothing to merge"));
     MergeReport rep;
     std::unordered_map<Uid, Uid> catMap, targetMap, soundMap;
     std::vector<json> newCategories, newTargets, newSounds, newGifts;
@@ -417,7 +422,7 @@ bool ProjectMerge::merge(Project& p, const MergeSource& src, const MergeOptions&
         for (auto it = newCategories.rbegin(); it != newCategories.rend(); ++it) self->categories.removeItem(jget<Uid>(*it, "uid", 0));
         self->touch();
     };
-    organic::UndoManager::get().perform("Merge show", doFn, undoFn,
+    organic::UndoManager::get().perform(LTR("undo.mergeShow", "Merge show"), doFn, undoFn,
                                         { self, &self->sounds, &self->categories, &self->oscTargets, &self->giftActions, &self->roomEvents });
     OLOG("Project", "Merged '" << src.title << "': " << rep.summary());
     if (report) *report = rep;

@@ -1,4 +1,5 @@
 #include "model/Project.h"
+#include "util/Localize.h"
 #include <algorithm>
 #include <filesystem>
 
@@ -120,7 +121,7 @@ void Project::deleteSoundsUndoable(const std::vector<Sound*>& list)
         }
         self->touch();
     };
-    organic::UndoManager::get().perform(recs.size() == 1 ? "Delete sound" : "Delete sounds", doFn, undoFn, { this, &sounds });
+    organic::UndoManager::get().perform(recs.size() == 1 ? LTR("undo.deleteSound", "Delete sound") : LTR("undo.deleteSounds", "Delete sounds"), doFn, undoFn, { this, &sounds });
 }
 
 bool Project::categoryDeletable(const Category* c) const
@@ -145,7 +146,7 @@ void Project::deleteCategoryUndoable(Category* c)
     for (auto* s : sounds.sounds()) if (s->categoryUid == catUid) moved.push_back(s->uid);
 
     Project* self = this;
-    organic::UndoManager::get().perform("Delete category",
+    organic::UndoManager::get().perform(LTR("undo.deleteCategory", "Delete category"),
         [self, catUid, fbUid, moved]
         {
             for (Uid u : moved) if (Sound* s = self->sounds.find(u)) s->categoryUid = fbUid;

@@ -135,7 +135,7 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
     if (!valid) ImGui::PopStyleColor();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
-        if (!valid) ImGui::SetTooltip(TR("osc.invalidCommand"), parseErr.c_str());
+        if (!valid) ImGui::SetTooltip(TR("osc.invalidCommand"), oscErrorLabel(parseErr).c_str());
         else if (!cmd.rt.lastError.empty()) ImGui::SetTooltip(TR("osc.lastSendFailed"), cmd.rt.lastError.c_str());
         else
         {
@@ -199,10 +199,11 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     const float pad2 = ImGui::GetStyle().FramePadding.x * 2;
     float testW = ImGui::GetFrameHeight();
     float delayW = 64.f * theme::scale();
-    float msW = ImGui::CalcTextSize("ms").x + 4;
+    float msW = ImGui::CalcTextSize(TR("osc.ms")).x + 4;
     std::string addLabelLong = std::string(ICON_PH_PLUS " ") + TR("osc.addCommandLong");
     std::string addLabelShort = std::string(ICON_PH_PLUS " ") + TR("osc.addCommandShort");
-    float nameW = ImGui::CalcTextSize(phase.niceName.c_str()).x + ImGui::GetFontSize() * 1.6f + 16;
+    std::string phaseName = phaseLabel(phase);
+    float nameW = ImGui::CalcTextSize(phaseName.c_str()).x + ImGui::GetFontSize() * 1.6f + 16;
     float addW = ImGui::CalcTextSize(addLabelLong.c_str()).x + pad2;
     const std::string* addLabel = &addLabelLong;
     if (nameW + delayW + msW + testW + addW + spacing * 4 + 12 > w)
@@ -222,15 +223,15 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     ImGui::TextUnformatted(icon);
     ImGui::SameLine();
     float nameMaxW = std::max(30.f, controlsX - ImGui::GetCursorScreenPos().x - 8);
-    std::string nameShown = ellipsize(phase.niceName, nameMaxW);
+    std::string nameShown = ellipsize(phaseName, nameMaxW);
     ImGui::TextUnformatted(nameShown.c_str());
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
         switch (phase.anchor)
         {
-        case Anchor::Start: ImGui::SetTooltip(TR("osc.startTooltip"), phase.niceName.c_str()); break;
-        case Anchor::End:   ImGui::SetTooltip(TR("osc.endTooltip"), phase.niceName.c_str()); break;
-        case Anchor::Timer: ImGui::SetTooltip(TR("osc.timerAnchorTooltip"), phase.niceName.c_str()); break;
+        case Anchor::Start: ImGui::SetTooltip(TR("osc.startTooltip"), phaseName.c_str()); break;
+        case Anchor::End:   ImGui::SetTooltip(TR("osc.endTooltip"), phaseName.c_str()); break;
+        case Anchor::Timer: ImGui::SetTooltip(TR("osc.timerAnchorTooltip"), phaseName.c_str()); break;
         }
     }
     ImGui::SameLine();

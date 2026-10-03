@@ -1,5 +1,6 @@
 #include "model/RoomEventAction.h"
 #include "model/InspectorHooks.h"
+#include "util/Localize.h"
 
 namespace evobox
 {
@@ -73,7 +74,7 @@ int RoomEventAction::stopTimerMs() const
 
 void RoomEventAction::setSoundUidUndoable(Uid uid)
 {
-    setFieldUndoable<Uid>(this, soundUid, uid, "Set room event sound");
+    setFieldUndoable<Uid>(this, soundUid, uid, LTR("undo.setRoomEventSound", "Set room event sound"));
 }
 
 void RoomEventAction::inspectorGui()

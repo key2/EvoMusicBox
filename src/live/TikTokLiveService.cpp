@@ -1,4 +1,5 @@
 #include "live/TikTokLiveService.h"
+#include "util/Localize.h"
 #include "util/Paths.h"
 #include "util/Strings.h"
 #include <filesystem>
@@ -52,7 +53,7 @@ LiveEvent convert(const ttlive::Event& e)
     o.viewerCount = e.viewer_count;
     o.controlAction = e.control_action;
     if (e.type == ttlive::EventType::Connect)
-        o.message = "room " + std::to_string(e.room_id);
+        o.message = str::format(LTR("live.roomMessage", "room %lld"), (long long)e.room_id); // shown in the feed line
     return o;
 }
 
@@ -112,7 +113,7 @@ void TikTokLiveService::connect(const std::string& usernameIn, const LiveOptions
     std::string username = str::cleanUsername(usernameIn);
     if (username.empty())
     {
-        setState(LiveState::Error, "enter a TikTok username first");
+        setState(LiveState::Error, LTR("live.error.noUsername", "enter a TikTok username first"));
         return;
     }
     {
@@ -176,7 +177,7 @@ void TikTokLiveService::run(std::string username, LiveOptions o)
             LiveServiceEvent st;
             st.kind = LiveServiceEvent::Kind::State;
             st.state = LiveState::Connected;
-            st.message = "room " + std::to_string(e.room_id);
+            st.message = str::format(LTR("live.roomMessage", "room %lld"), (long long)e.room_id);
             events_.push(std::move(st));
         });
         raw->on_any([this](const ttlive::Event& e)
@@ -199,7 +200,7 @@ void TikTokLiveService::run(std::string username, LiveOptions o)
     }
     catch (...)
     {
-        setState(LiveState::Error, "unknown error");
+        setState(LiveState::Error, LTR("live.error.unknown", "unknown error"));
     }
 }
 

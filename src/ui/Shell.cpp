@@ -319,7 +319,7 @@ void Shell::menuBar()
     }
     // right side: playing count + dirty
     {
-        std::string s = app_.project.title() + (app_.project.dirty() ? " *" : "");
+        std::string s = app_.displayTitle() + (app_.project.dirty() ? " *" : "");
         int playing = app_.playback.playingCount();
         if (playing) s += str::format("   " ICON_PH_SPEAKER_HIGH " %d", playing);
         float w = ImGui::CalcTextSize(s.c_str()).x + 16;
@@ -423,7 +423,7 @@ void Shell::dialogs()
         IGFD::FileDialogConfig cfg;
         std::string loc = app_.projectLocation();
         cfg.path = !loc.empty() ? std::filesystem::path(loc).parent_path().string() : (lastProjectDir_.empty() ? "." : lastProjectDir_);
-        cfg.fileName = app_.hasBundle() ? app_.project.title() + ProjectIO::kArchiveExt : std::string("MyShow") + ProjectIO::kArchiveExt;
+        cfg.fileName = app_.hasBundle() ? app_.project.title() + ProjectIO::kArchiveExt : std::string(TR("dialog.saveAs.defaultName")) + ProjectIO::kArchiveExt;
         cfg.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_ConfirmOverwrite | ImGuiFileDialogFlags_DontShowHiddenFiles;
         fd->OpenDialog("SaveProject", (std::string(ICON_PH_FLOPPY_DISK " ") + TR("dialog.saveAs.title")).c_str(),
                        TR("dialog.saveAs.filters"), cfg);
@@ -636,7 +636,7 @@ void Shell::dialogs()
             mergeSource_ = MergeSource{};
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(bw, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+        if (ImGui::Button(TR("dialog.cancel"), ImVec2(bw, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape))
         {
             ImGui::CloseCurrentPopup();
             mergeSource_ = MergeSource{};

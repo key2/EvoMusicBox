@@ -100,7 +100,12 @@ Translations are **not** hard-coded: every UI string lives in a flat JSON catalo
 `assets/lang/<code>.json` (`en.json`, `ru.json`, `zh.json`), keyed by stable dotted identifiers like
 `menu.file.save`. The code looks each one up with `TR("key")` / `trFmt("key", arg)` (see
 `src/ui/I18n.*`); a missing key falls back to English and then to the key itself, so nothing ever
-crashes on an incomplete translation.
+crashes on an incomplete translation. Text that is born below the UI layer — default names of new
+items, undo-history labels, status-bar and error messages — goes through `LTR("key", "English")`
+(`src/util/Localize.h`): the English stays in the code as the fallback and the UI installs the
+translator at start-up. Parameters drawn by the generic widgets (Settings, clip and gift settings)
+get their labels through `LocalizeParam()`, and the vendored file dialog's texts are translated at
+draw time (`src/ui/IGFDGlue.*`).
 
 To **update wording**, edit the value in the relevant `*.json` — no rebuild of logic needed, the
 file is read at startup (it is copied next to the executable / into the macOS bundle's
@@ -115,8 +120,12 @@ Fonts: English/Russian render from Roboto, Chinese (and Cyrillic fallback) from 
 `NotoSansCJKsc-Regular.otf`, merged on top of Roboto in `src/ui/Fonts.cpp` (ImGui 1.92 rasterises
 glyphs on demand, so the merge only costs atlas space for glyphs actually drawn).
 
-Note: a few model-layer labels that double as save-file keys (OSC phase names) and TikTok
-room-event identifiers remain in English to keep project files portable across languages.
+Identifiers that live in the show files stay English on disk and are translated for display only:
+the OSC phase names (`At play (start)`, `On gift`, `Stop`, …), the room-event kinds and the default
+categories (a new show seeds its categories in the UI language; they are renamable user data from
+then on, and the custom one is found by a persisted key, not by its name). Still English by
+design: data such as gift names, audio device names and OSC addresses, the `Localhost` target, and
+low-level diagnostics (decoder and network errors, undo labels generated inside `imgui_organic`).
 
 ## macOS build (self-contained .app)
 
@@ -216,7 +225,7 @@ either — see `HANDOVER.md` §7.1.
 Useful flags: `--no-audio` (null audio backend), `--demo-gifts` (offline gift catalog),
 `--verbose` (mirror the log to stderr), `--frames N --screenshot out.png` (headless smoke run,
 paced at 60 Hz), `--save-as Show.liv` (save at the end of a smoke run), `--new`, `--import <file>`,
-`--performance`.
+`--open-panel <name>` (show a dock panel such as `Settings` in a smoke run), `--performance`.
 
 Keyboard: `Space` toggles the selected tile (fires an effect again), `Enter` plays it, `Esc` stops
 everything and cancels pending OSC timers, `Ctrl+Space` simulates the selected gift / room event

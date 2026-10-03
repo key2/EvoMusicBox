@@ -1,4 +1,5 @@
 #include "model/OscCommand.h"
+#include "util/Localize.h"
 
 namespace evobox
 {
@@ -14,7 +15,7 @@ OscCommand::OscCommand() : organic::BaseItem(kType, "OSC command")
 
 void OscCommand::setTargetUidUndoable(Uid uid)
 {
-    setFieldUndoable<Uid>(this, targetUid, uid, "Set OSC target");
+    setFieldUndoable<Uid>(this, targetUid, uid, LTR("undo.setOscTarget", "Set OSC target"));
 }
 
 json OscCommand::save() const
@@ -67,7 +68,7 @@ OscCommand* OscCommandManager::addCommandUndoable(const std::string& text, Uid t
     data["_index"] = indexOf(raw);
     Uid uid = raw->uid;
     OscCommandManager* self = this;
-    organic::UndoManager::get().pushDone("Add OSC command",
+    organic::UndoManager::get().pushDone(LTR("undo.addOscCommand", "Add OSC command"),
         [self, data] { self->addItemFromJson(data); },
         [self, uid]  { self->removeItem(uid); },
         { self });

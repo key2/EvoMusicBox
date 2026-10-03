@@ -1,5 +1,7 @@
 #include "ui/I18n.h"
 #include "OrganicCore.h"
+#include "ui/IGFDGlue.h"
+#include "util/Localize.h"
 #include "util/Paths.h"
 #include "json.hpp"
 #include <algorithm>
@@ -108,6 +110,38 @@ void I18n::init()
 
     // Resolve the active catalogue (active_ may have been set from prefs before init()).
     setLanguage(active_);
+    // Text born below the UI (model defaults, undo labels, status / error messages) reaches the
+    // catalogue through util/Localize.h; the English passed at the call site stays the fallback.
+    setLocalizer([](const char* key, const char* english) -> const char* {
+        const I18n& i = I18n::get();
+        return i.has(key) ? i.tr(key).c_str() : english;
+    });
+    // The file dialog's English strings (ui/IGFDConfig.h) map onto catalogue keys here.
+    igfd::setTranslator([](const char* english) -> const char* {
+        static const std::map<std::string, const char*> keys = {
+            { "Places",                          "fileDialog.places" },
+            { "Places (bookmarks and devices)",  "fileDialog.placesHelp" },
+            { "File name",                       "fileDialog.fileName" },
+            { "Folder",                          "fileDialog.folder" },
+            { "Reset search",                    "fileDialog.resetSearch" },
+            { "Devices",                         "fileDialog.devices" },
+            { "Edit path\nYou can also right click on path buttons", "fileDialog.editPath" },
+            { "Reset to current directory",      "fileDialog.resetPath" },
+            { "Create folder",                   "fileDialog.createFolder" },
+            { "OK",                              "dialog.ok" },
+            { "Cancel",                          "dialog.cancel" },
+            { "Confirm",                         "dialog.confirm" },
+            { "Name",                            "fileDialog.colName" },
+            { "Type",                            "fileDialog.colType" },
+            { "Size",                            "fileDialog.colSize" },
+            { "Date",                            "fileDialog.colDate" },
+            { "The selected file already exists. Overwrite it?", "fileDialog.overwriteMessage" },
+        };
+        auto it = keys.find(english ? english : "");
+        if (it == keys.end()) return nullptr;
+        const I18n& i = I18n::get();
+        return i.has(it->second) ? i.tr(it->second).c_str() : nullptr;
+    });
     OLOG("I18n", "languages: " << languages_.size() << ", active '" << active_ << "'");
 }
 
@@ -140,6 +174,11 @@ const std::string& I18n::tr(const std::string& key) const
         if (it != englishCat_->strings.end()) return it->second;
     }
     return key; // last resort: show the key so a missing string is obvious, never crash
+}
+
+bool I18n::has(const std::string& key) const
+{
+    return (activeCat_ && activeCat_->strings.count(key)) || (englishCat_ && englishCat_->strings.count(key));
 }
 
 const char* tr(const std::string& key)

@@ -17,6 +17,18 @@ void SettingsPanel::draw(bool* open)
     if (ImGui::Begin((TR("panel.settings") + std::string("###Settings")).c_str(), open))
     {
         SectionHeader(TR("settings.project"));
+        {
+            // the Settings container is drawn by organic's generic widget: give every parameter its
+            // translated label / tooltip / option names first (JSON short names stay English)
+            Settings& st = app_.project.settings;
+            LocalizeParam(st.playbackPolicyP, "settings.param.playbackPolicy", "settings.param.playbackPolicy.desc", "settings.param.playbackPolicy");
+            LocalizeParam(st.masterVolumeP, "settings.param.masterVolume", "settings.param.masterVolume.desc");
+            LocalizeParam(st.copyMediaP, "settings.param.copyMedia", "settings.param.copyMedia.desc");
+            LocalizeParam(st.autosaveIntervalP, "settings.param.autosaveInterval", "settings.param.autosaveInterval.desc");
+            LocalizeParam(st.oscDefaultPortP, "settings.param.oscDefaultPort", "settings.param.oscDefaultPort.desc");
+            LocalizeParam(st.afterPlayOnStopP, "settings.param.afterPlayOnStop", "settings.param.afterPlayOnStop.desc");
+            LocalizeParam(st.stopAllFadeMsP, "settings.param.stopAllFade", "settings.param.stopAllFade.desc");
+        }
         app_.project.settings.inspectorGui();
 
         Spacer(8);

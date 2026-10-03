@@ -1,6 +1,8 @@
 #include "ui/widgets/Common.h"
+#include "OrganicCore.h"
 #include "ui/I18n.h"
 #include "ui/Icons.h"
+#include "util/Strings.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
@@ -21,6 +23,111 @@ const char* liveStateLabel(LiveState s)
     case LiveState::Error:        return TR("live.state.error");
     }
     return TR("live.state.disconnected");
+}
+
+std::string phaseLabel(const OscPhase& phase)
+{
+    // the names are the fixed ones given by Sound / GiftAction / RoomEventAction (also used to match
+    // phases when a show is loaded or merged, hence never translated in the model)
+    static const struct { const char* name; const char* key; } kNames[] = {
+        { "At play (start)", "phase.name.atPlay" },
+        { "After play",      "phase.name.afterPlay" },
+        { "On gift",         "phase.name.onGift" },
+        { "On event",        "phase.name.onEvent" },
+        { "Stop",            "phase.name.stop" },
+    };
+    for (auto& n : kNames)
+        if (phase.niceName == n.name) return TR(n.key);
+    return phase.niceName;
+}
+
+const char* roomEventLabel(RoomEventKind kind)
+{
+    switch (kind)
+    {
+    case RoomEventKind::Like:      return TR("roomEvent.like");
+    case RoomEventKind::Follow:    return TR("roomEvent.follow");
+    case RoomEventKind::Share:     return TR("roomEvent.share");
+    case RoomEventKind::Subscribe: return TR("roomEvent.subscribe");
+    case RoomEventKind::Join:      return TR("roomEvent.join");
+    default:                       return roomEventKindName(kind);
+    }
+}
+
+std::string agoLabel(double s)
+{
+    if (s < 5) return TR("time.justNow");
+    if (s < 60) return str::format(TR("time.secondsAgo"), (int)s);
+    if (s < 3600) return str::format(TR("time.minutesAgo"), (int)(s / 60));
+    if (s < 86400) return str::format(TR("time.hoursAgo"), (int)(s / 3600));
+    return str::format(TR("time.daysAgo"), (int)(s / 86400));
+}
+
+std::string liveEventLabel(const LiveEvent& e)
+{
+    // the simulated user is ours: name it in the UI language
+    std::string who = e.user.uniqueId == "simulate" ? std::string(TR("live.feed.simulator"))
+                    : (e.user.nickname.empty() ? (e.user.uniqueId.empty() ? std::string(TR("live.feed.someone")) : "@" + e.user.uniqueId)
+                                               : e.user.nickname);
+    switch (e.type)
+    {
+    case LiveEventType::Gift:
+    {
+        std::string gift = e.giftName.empty() ? str::format(TR("live.feed.giftNumber"), (long long)e.giftId) : e.giftName;
+        std::string s = str::format(TR("live.feed.sentGift"), who.c_str(), gift.c_str());
+        if (e.repeatCount > 1) s += " x" + std::to_string(e.repeatCount);
+        if (e.giftStreaking) s += std::string(" ") + TR("live.feed.streaking");
+        if (e.diamondCount) s += "  " + str::format(TR("live.feed.diamonds"), e.diamondCount * (e.repeatCount > 0 ? e.repeatCount : 1));
+        return s;
+    }
+    case LiveEventType::Comment:     return who + ": " + e.comment;
+    case LiveEventType::Like:
+    {
+        std::string s = str::format(TR("live.feed.liked"), who.c_str(), e.likeCount);
+        if (e.totalLikes) s += "  " + str::format(TR("live.feed.likeTotal"), str::groupThousands(e.totalLikes).c_str());
+        return s;
+    }
+    case LiveEventType::Join:        return str::format(TR("live.feed.joined"), who.c_str());
+    case LiveEventType::Follow:      return str::format(TR("live.feed.followed"), who.c_str());
+    case LiveEventType::Share:       return str::format(TR("live.feed.shared"), who.c_str());
+    case LiveEventType::Subscribe:   return str::format(TR("live.feed.subscribed"), who.c_str());
+    case LiveEventType::RoomUserSeq: return str::format(TR("live.feed.viewers"), str::groupThousands(e.viewerCount).c_str());
+    case LiveEventType::Connect:     return std::string(TR("live.feed.connected")) + (e.message.empty() ? "" : " " + e.message);
+    case LiveEventType::Disconnect:  return TR("live.feed.disconnected");
+    case LiveEventType::LiveEnd:     return TR("live.feed.streamEnded");
+    case LiveEventType::Control:     return str::format(TR("live.feed.control"), e.controlAction) + (e.message.empty() ? "" : " " + e.message);
+    case LiveEventType::Error:       return str::format(TR("live.feed.error"), e.message.c_str());
+    case LiveEventType::Info:        return e.message;
+    case LiveEventType::Unknown:     return e.method.empty() ? std::string(TR("live.feed.unknown")) : e.method;
+    }
+    return e.method;
+}
+
+std::string oscErrorLabel(const std::string& err)
+{
+    static const struct { const char* text; const char* key; } kErrors[] = {
+        { "empty command",                 "osc.error.empty" },
+        { "address must start with '/'",   "osc.error.addressStart" },
+        { "invalid character in address",  "osc.error.addressChar" },
+        { "address must not end with '/'", "osc.error.addressEnd" },
+        { "unterminated quote",            "osc.error.quote" },
+    };
+    for (auto& k : kErrors)
+        if (err == k.text) return TR(k.key);
+    return err;
+}
+
+void LocalizeParam(organic::Parameter* p, const char* labelKey, const char* descKey, const char* enumKeyPrefix)
+{
+    if (!p) return;
+    p->displayName = TR(labelKey);
+    if (descKey) p->displayDescription = TR(descKey);
+    if (enumKeyPrefix)
+    {
+        p->enumLabels.resize(p->enumOptions.size());
+        for (size_t i = 0; i < p->enumOptions.size(); i++)
+            p->enumLabels[i] = TR((std::string(enumKeyPrefix) + "." + std::to_string(i)).c_str());
+    }
 }
 
 float pulse(double startTime, double now, double duration)
@@ -151,8 +258,16 @@ void SectionHeader(const char* label, const char* rightText)
     ImGui::Dummy(ImVec2(0, 2));
     ImGui::PushStyleColor(ImGuiCol_Text, c.textDim);
     ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 0.85f);
+    // upper-case ASCII and Cyrillic (U+0430..U+044F -> U+0410..U+042F, ё -> Ё); CJK has no case
     std::string up;
-    for (const char* p = label; *p; p++) up.push_back((char)toupper((unsigned char)*p));
+    for (const unsigned char* p = (const unsigned char*)label; *p;)
+    {
+        if (*p == 0xD0 && p[1] >= 0xB0 && p[1] <= 0xBF) { up.push_back((char)0xD0); up.push_back((char)(p[1] - 0x20)); p += 2; }      // а..п
+        else if (*p == 0xD1 && p[1] >= 0x80 && p[1] <= 0x8F) { up.push_back((char)0xD0); up.push_back((char)(p[1] + 0x20)); p += 2; } // р..я
+        else if (*p == 0xD1 && p[1] == 0x91) { up.push_back((char)0xD0); up.push_back((char)0x81); p += 2; }                           // ё
+        else if (*p < 0x80) { up.push_back((char)toupper(*p)); p++; }
+        else { up.push_back((char)*p); p++; }
+    }
     ImGui::TextUnformatted(up.c_str());
     if (rightText)
     {
@@ -230,7 +345,8 @@ void ConfirmPopup::draw()
         float bw = 110.f * theme::scale();
         if (ImGui::Button(TR("dialog.cancel"), ImVec2(bw, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
         ImGui::SameLine();
-        bool ok = danger ? DangerButton(confirmLabel.c_str(), ImVec2(bw, 0)) : AccentButton(confirmLabel.c_str(), ImVec2(bw, 0));
+        const char* okLabel = confirmLabel.empty() ? TR("dialog.delete") : confirmLabel.c_str();
+        bool ok = danger ? DangerButton(okLabel, ImVec2(bw, 0)) : AccentButton(okLabel, ImVec2(bw, 0));
         if (ok || ImGui::IsKeyPressed(ImGuiKey_Enter))
         {
             if (onConfirm) onConfirm();

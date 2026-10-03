@@ -170,8 +170,11 @@ bool StickerPickerBody(const char* id, std::string& outSticker, const ImVec4& ti
     {
         for (const Group& g : groups())
         {
+            // group names come from assets/stickers.json in English; a matching catalogue key
+            // ("sticker.group.<name>") translates them, anything else shows as written
+            std::string key = "sticker.group." + str::lower(g.name);
             ImGui::PushStyleColor(ImGuiCol_Text, theme::colors().textDim);
-            ImGui::TextUnformatted(g.name.c_str());
+            ImGui::TextUnformatted(I18n::get().has(key) ? TR(key) : g.name.c_str());
             ImGui::PopStyleColor();
             if (iconGrid(g.icons, outSticker, tint, outSticker)) picked = true;
             ImGui::Spacing();

@@ -92,11 +92,14 @@ set(ORGANIC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/imgui_organic)
 
 # ---------------------------------------------------------------- 3. ImGuiFileDialog (links OUR imgui)
-add_library(ImGuiFileDialog STATIC third_party/ImGuiFileDialog/ImGuiFileDialog.cpp)
+# src/ui/IGFDGlue.cpp translates the dialog's texts at draw time (the config routes every button
+# and string through it); it depends on ImGui only, so it lives in this target and avoids a
+# static-library cycle with evobox_core, which installs the translator (ui/I18n.cpp)
+add_library(ImGuiFileDialog STATIC third_party/ImGuiFileDialog/ImGuiFileDialog.cpp src/ui/IGFDGlue.cpp)
 target_include_directories(ImGuiFileDialog PUBLIC third_party/ImGuiFileDialog)
 target_compile_definitions(ImGuiFileDialog PUBLIC
     CUSTOM_IMGUIFILEDIALOG_CONFIG="${CMAKE_SOURCE_DIR}/src/ui/IGFDConfig.h")
-target_include_directories(ImGuiFileDialog PRIVATE ${CMAKE_BINARY_DIR}/generated)
+target_include_directories(ImGuiFileDialog PRIVATE ${CMAKE_BINARY_DIR}/generated ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries(ImGuiFileDialog PUBLIC imgui)
 
 # ---------------------------------------------------------------- 4. FFmpeg (system, dynamic)

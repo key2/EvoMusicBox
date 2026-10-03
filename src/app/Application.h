@@ -98,6 +98,7 @@ public:
     std::string projectLocation() const;                     // the .liv path, else the bundle folder
     std::string openRequestPath;                             // a show file was dropped: the shell opens it (unsaved-changes prompt)
     std::string windowTitle() const;
+    std::string displayTitle() const;  // project.title(), or the translated "Untitled" placeholder
     void setStatus(const std::string& msg);
 
     // ---- sounds

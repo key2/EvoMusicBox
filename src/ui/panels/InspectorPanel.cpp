@@ -16,23 +16,6 @@ namespace evobox
 namespace ui
 {
 
-// Apply localized display labels to a model Parameter without touching its serialization shortName
-// (which stays derived from the English niceName, so save files are unaffected). Re-applied every
-// frame so a language switch updates live. `enumKeyPrefix` + ".<index>" gives the option labels.
-static void localizeParam(organic::Parameter* p, const char* labelKey, const char* descKey,
-                          const char* enumKeyPrefix = nullptr)
-{
-    if (!p) return;
-    p->displayName = TR(labelKey);
-    if (descKey) p->displayDescription = TR(descKey);
-    if (enumKeyPrefix)
-    {
-        p->enumLabels.resize(p->enumOptions.size());
-        for (size_t i = 0; i < p->enumOptions.size(); i++)
-            p->enumLabels[i] = TR((std::string(enumKeyPrefix) + "." + std::to_string(i)).c_str());
-    }
-}
-
 InspectorPanel::InspectorPanel(Application& app) : app_(app) {}
 
 void InspectorPanel::installHooks()
@@ -198,6 +181,12 @@ void InspectorPanel::drawSound(Sound& s)
     if (ImGui::CollapsingHeader(TR("inspector.clipSettings")))
     {
         ImGui::Indent(4);
+        // display labels re-applied each frame (language switch), JSON short names untouched
+        LocalizeParam(s.gainDbP, "param.gain", "param.gain.desc");
+        LocalizeParam(s.normalizeP, "param.normalize", "param.normalize.desc");
+        LocalizeParam(s.fadeInMsP, "param.fadeIn", "param.fadeIn.desc");
+        LocalizeParam(s.fadeOutMsP, "param.fadeOut", "param.fadeOut.desc");
+        LocalizeParam(s.hotkeyP, "param.hotkey", "param.hotkey.desc");
         organic::DrawParamWidget(*s.gainDbP);
         organic::DrawParamWidget(*s.normalizeP);
         organic::DrawParamWidget(*s.fadeInMsP);
@@ -268,11 +257,11 @@ void InspectorPanel::drawGift(GiftAction& g)
     if (ImGui::CollapsingHeader(TR("inspector.giftBehaviour"), ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::Indent(4);
-        localizeParam(g.enabledP, "param.enabled", nullptr);
-        localizeParam(g.streakModeP, "param.streakMode", "param.streakMode.desc", "param.streakMode");
-        localizeParam(g.retriggerP, "param.retrigger", "param.retrigger.desc", "param.retrigger");
-        localizeParam(g.cooldownMsP, "param.cooldown", "param.cooldown.desc");
-        localizeParam(g.minDiamondsP, "param.minDiamonds", "param.minDiamonds.desc");
+        LocalizeParam(g.enabledP, "param.enabled", nullptr);
+        LocalizeParam(g.streakModeP, "param.streakMode", "param.streakMode.desc", "param.streakMode");
+        LocalizeParam(g.retriggerP, "param.retrigger", "param.retrigger.desc", "param.retrigger");
+        LocalizeParam(g.cooldownMsP, "param.cooldown", "param.cooldown.desc");
+        LocalizeParam(g.minDiamondsP, "param.minDiamonds", "param.minDiamonds.desc");
         organic::DrawParamWidget(*g.enabledP);
         organic::DrawParamWidget(*g.streakModeP);
         organic::DrawParamWidget(*g.retriggerP);
@@ -314,10 +303,10 @@ void InspectorPanel::drawRoomEvent(RoomEventAction& r)
     ImGui::SameLine();
     ImGui::BeginGroup();
     ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.2f);
-    ImGui::TextUnformatted(r.niceName.c_str());
+    ImGui::TextUnformatted(roomEventLabel(r.kind));
     ImGui::PopFont();
     if (r.kind == RoomEventKind::Like) TextDim(TR("inspector.roomEvent.likeInfo"), r.threshold(), r.rt.receivedCount);
-    else TextDim(TR("inspector.roomEvent.everyInfo"), str::lower(r.niceName).c_str(), r.rt.receivedCount);
+    else TextDim(TR("inspector.roomEvent.everyInfo"), roomEventLabel(r.kind), r.rt.receivedCount);
     ImGui::EndGroup();
     std::string simLabel = std::string(ICON_PH_PLAY " ") + TR("inspector.simulate");
     float bw = ImGui::CalcTextSize(simLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2;
@@ -342,9 +331,9 @@ void InspectorPanel::drawRoomEvent(RoomEventAction& r)
     if (ImGui::CollapsingHeader(TR("inspector.behaviour"), ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::Indent(4);
-        localizeParam(r.enabledP, "param.enabled", nullptr);
-        localizeParam(r.thresholdP, "param.threshold", "param.threshold.desc");
-        localizeParam(r.cooldownMsP, "param.cooldown", "param.cooldown.desc");
+        LocalizeParam(r.enabledP, "param.enabled", nullptr);
+        LocalizeParam(r.thresholdP, "param.threshold", "param.threshold.desc");
+        LocalizeParam(r.cooldownMsP, "param.cooldown", "param.cooldown.desc");
         organic::DrawParamWidget(*r.enabledP);
         if (r.kind == RoomEventKind::Like) organic::DrawParamWidget(*r.thresholdP);
         organic::DrawParamWidget(*r.cooldownMsP);

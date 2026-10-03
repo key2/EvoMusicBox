@@ -1,5 +1,6 @@
 #include "model/Sound.h"
 #include "model/InspectorHooks.h"
+#include "util/Localize.h"
 #include "util/TimeFormat.h"
 #include <algorithm>
 
@@ -11,7 +12,7 @@ std::function<void(GiftAction&)>      InspectorHooks::gift;
 std::function<void(RoomEventAction&)> InspectorHooks::roomEvent;
 
 // ================================================================ Sound
-Sound::Sound() : organic::BaseItem(kType, "New sound"), oscActions(this)
+Sound::Sound() : organic::BaseItem(kType, LTR("sound.newName", "New sound")), oscActions(this)
 {
     stickerP    = addString("Sticker", "ph:speaker-high", "Tile sticker (ph:<name>, emoji:<char>)");
     trimStartP  = addFloatUnbounded("Trim Start", 0.f, "Clip start in the source media (s)");
@@ -54,7 +55,7 @@ void Sound::setTrimUndoable(double start, double end)
     float ns = (float)start, ne = (float)end;
     if (os == ns && oe == ne) return;
     Sound* self = this;
-    organic::UndoManager::get().perform("Trim clip",
+    organic::UndoManager::get().perform(LTR("undo.trimClip", "Trim clip"),
         [self, ns, ne] { self->setTrim(ns, ne); },
         [self, os, oe] { self->setTrim(os, oe); },
         { this });
@@ -138,7 +139,7 @@ Sound* SoundManager::addSoundUndoable(std::unique_ptr<Sound> s, int index)
     data["_index"] = indexOf(raw);
     Uid uid = raw->uid;
     SoundManager* self = this;
-    organic::UndoManager::get().pushDone("Add sound",
+    organic::UndoManager::get().pushDone(LTR("undo.addSound", "Add sound"),
         [self, data] { self->addItemFromJson(data); },
         [self, uid]  { self->removeItem(uid); },
         { self });
@@ -153,7 +154,7 @@ void SoundManager::moveToCategoryUndoable(const std::vector<Sound*>& sounds, Uid
         if (s && s->manager == this && s->categoryUid != categoryUid) recs.push_back({ s->uid, s->categoryUid });
     if (recs.empty()) return;
     SoundManager* self = this;
-    organic::UndoManager::get().perform("Move to category",
+    organic::UndoManager::get().perform(LTR("undo.moveToCategory", "Move to category"),
         [self, recs, categoryUid]
         {
             for (auto& r : recs) if (Sound* s = self->find(r.uid)) s->categoryUid = categoryUid;

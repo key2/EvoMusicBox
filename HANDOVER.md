@@ -335,6 +335,51 @@ ttlive's `web_defaults::ca_bundle_path()` does — and `CURLSSLOPT_NATIVE_CA` on
 bundle the BoringSSL DLL would fail every TLS verification. Not on Windows: crash reports
 (`CrashHandler` is POSIX-only).
 
+### 4.6 Translations (English / Russian / Chinese)
+
+One flat catalogue per language, `assets/lang/<code>.json` (deployed next to the exe like the other
+assets; 566 keys, identical key sets — `tools`-free check: the script that added the 2026-10-03
+batch asserted parity and matching printf specifiers). `src/ui/I18n.*`: `TR("key")` → `const char*`
+valid for the frame, `trFmt("key", oneArg)` for a single `%s`/`%d`, `snprintf(buf, TR(fmt), ...)`
+for several arguments. Missing key → English → the key itself (visible, never fatal). The Language
+menu switches at runtime (prefs `language`); ImGui labels change text, so widgets whose identity
+matters carry `##id` / `###id` suffixes.
+
+Four mechanisms feed everything else into the same catalogues:
+- **`LTR("key", "English")`** (`src/util/Localize.h`): text born below the UI — default item names
+  (`sound.newName`, `category.default.*`, `gift.fallbackNamePrefix`), undo-history labels
+  (`undo.*`, shown by Edit ▸ Undo and the status bar), status messages (`status.*`), error texts of
+  ProjectIO / ProjectMerge / TikTok (`error.*`, `live.error.*`), the merge summary
+  (`merge.summary.*`, format strings so Russian can write "звуки: %d"), import filter names. The
+  English in the call is the fallback; `I18n::init()` installs the translator, the **tests install
+  nothing** and keep asserting on English (`findByName("Music")`, `"nothing to merge"`).
+- **`LocalizeParam(param, labelKey, descKey, enumPrefix)`** (`ui/widgets/Common.*`): sets organic's
+  `displayName` / `displayDescription` / `enumLabels` every frame before `DrawParamWidget` /
+  `inspectorGui()` — used for the Settings container (`settings.param.*`, the "Playback policy"
+  case), the Sound clip parameters (`param.gain` …) and the gift / room-event parameters. JSON short
+  names stay the English ones.
+- **Display helpers** for identities that stay English on disk: `phaseLabel()` (the fixed phase
+  names are match keys when a show is loaded or merged), `roomEventLabel()` (persisted kind keys),
+  `liveEventLabel()` (the feed line; `LiveEvent::summary()` stays English for the logger),
+  `agoLabel()`, `oscErrorLabel()` (parser messages). Default categories are **seeded in the UI
+  language** and are user data afterwards; `Category::key` ("music" … "custom", persisted, derived
+  from the English name for older shows) replaces the name lookup in `customCategory()`. The
+  Application constructor seeds its project before `I18n::init()` (members first), so `main.cpp`
+  calls `project.resetToDefaults()` once more right after the catalogue is loaded.
+- **File dialog** (`src/ui/IGFDGlue.*`, compiled into the ImGuiFileDialog target): the vendored
+  library's texts are config macros, some concatenated with `"##id"` literals, so they cannot
+  expand to calls. `IGFDConfig.h` routes every button through `igfd::button()` /
+  `igfd::toggleButton()` (translates the part before `##`) and plain strings through
+  `igfd::text()`; `I18n::init()` installs the English→key map (`fileDialog.*`). The overwrite
+  modal's title is literal-concatenated too, so it is a warning glyph.
+
+`SectionHeader` upper-cases Cyrillic as well as ASCII (CJK has no case). Still English by design:
+data (gift names, device names, OSC addresses, demo content), the `Localhost` target, decoder /
+network diagnostics, and undo labels generated inside `imgui_organic` ("Set Gain", "Remove Items" —
+would need a hook in that library). Verifying a language headlessly: write `{"language":"zh"}` into
+a scratch `XDG_CONFIG_HOME` and run with `--screenshot`; `--open-panel Settings` shows a hidden
+panel, `--import-dialog <dir>` the file dialog.
+
 ---
 
 ## 5. Design decisions worth knowing
@@ -369,6 +414,14 @@ bundle the BoringSSL DLL would fail every TLS verification. Not on Windows: cras
 ## 6. Change log (newest first, with the reasons)
 
 **2026-10-03**
+- **Translation completeness** (§4.6): the i18n commit left ~280 English strings outside the
+  catalogues — the whole Settings panel and the clip parameters (organic's generic widgets drew the
+  model's English names), phase and room-event names, default categories, confirm buttons, status
+  bar and error messages, undo labels, the live feed lines, relative times, the file dialog. Added
+  `LTR()` (`util/Localize.h`) for text born below the UI, a shared `LocalizeParam()`, display
+  helpers for on-disk identifiers, `Category::key`, the ImGuiFileDialog glue, Cyrillic-aware
+  section headers, and 160 keys in each of en/ru/zh. `--open-panel <name>` smoke flag. 11/11 tests
+  (they see the English fallbacks). README (EN + ZH, now in sync) describe the layers.
 - Pulled `2d71dfa` (macOS: 3.2 Core GL context, `tools/macos/build.sh` self-contained `.app`) and
   `88e2b2f` (i18n: Language menu English / Russian / Chinese, `assets/lang/<code>.json` catalogues,
   `src/ui/I18n.*`, Noto Sans CJK merged into the UI font, `imgui_organic` → 98fa479 for the
@@ -380,9 +433,8 @@ bundle the BoringSSL DLL would fail every TLS verification. Not on Windows: cras
   **v0.1.0 release assets were replaced** with this build and the `v0.1.0` tag moved onto this
   commit (`git tag -f` + `git push --force origin v0.1.0`, `gh release upload --clobber`) — the
   release was hours old with no downloads; from now on a changed build gets a new version + tag
-  (bump `EVOBOX_VERSION`). Not yet done: `README.zh-CN.md` lacks the new "Languages /
-  translations" and "macOS build" sections of `README.md`, and this file has no §4 section on the
-  i18n layer or the macOS packaging yet.
+  (bump `EVOBOX_VERSION`). Not yet done: this file has no §4 section on the macOS packaging
+  (`tools/macos/build.sh`) — README.md's "macOS build" section is the reference for now.
 
 **2026-10-01**
 - **Release v0.1.0**: annotated tag on `main`, GitHub Release with the Windows x64 artifacts built by

@@ -5,8 +5,13 @@
 #include <functional>
 #include <string>
 #include "imgui.h"
+#include "live/LiveEvent.h"
 #include "live/LiveEventRouter.h"
+#include "model/OscPhase.h"
+#include "model/RoomEventAction.h"
 #include "ui/Theme.h"
+
+namespace organic { struct Parameter; }
 
 namespace evobox
 {
@@ -16,6 +21,25 @@ namespace ui
 // Localized name of a live-connection state for the UI (status bar, gift gallery, live monitor).
 // liveStateName() in the model stays English for logs/serialization; this is the translated label.
 const char* liveStateLabel(LiveState s);
+
+// Display labels for model identities that stay English on disk (save-file / merge keys):
+// the fixed phase names ("At play (start)", "On gift", "Stop", ...) and the room-event kinds.
+// Unknown names come back unchanged.
+std::string phaseLabel(const OscPhase& phase);
+const char* roomEventLabel(RoomEventKind kind);
+// Relative time ("just now", "3 min ago") in the UI language.
+std::string agoLabel(double seconds);
+// A live-feed line ("Simulator sent Galaxy  1000 diamonds") in the UI language; LiveEvent::summary()
+// stays English for the logger.
+std::string liveEventLabel(const LiveEvent& e);
+// OSC command parser errors ("empty command", ...) in the UI language; unknown texts unchanged.
+std::string oscErrorLabel(const std::string& parserError);
+
+// Points an organic Parameter's display name / tooltip / enum option labels at catalogue keys
+// ("<key>", "<key>.desc", "<key>.<index>"); the JSON short names are untouched. Call it before
+// drawing: the overrides are plain strings, so a language switch is picked up on the next frame.
+void LocalizeParam(organic::Parameter* p, const char* labelKey, const char* descKey = nullptr,
+                   const char* enumKeyPrefix = nullptr);
 
 // 1 -> 0 over `duration` seconds after `startTime`; 0 when idle (startTime < 0).
 float pulse(double startTime, double now, double duration = 0.3);
@@ -42,11 +66,12 @@ struct ConfirmPopup
     std::string id = "Confirm";
     std::string title;
     std::string message;
-    std::string confirmLabel = "Delete";
+    std::string confirmLabel;            // empty = TR("dialog.delete")
     bool danger = true;
     std::function<void()> onConfirm;
     bool wantOpen = false;
-    void open(const std::string& t, const std::string& msg, std::function<void()> fn, const std::string& label = "Delete");
+    // `label` empty: the translated "Delete" (the common case) is resolved when the popup draws
+    void open(const std::string& t, const std::string& msg, std::function<void()> fn, const std::string& label = std::string());
     void draw();
 };
 

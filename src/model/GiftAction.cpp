@@ -1,4 +1,5 @@
 #include "model/GiftAction.h"
+#include "util/Localize.h"
 #include "model/InspectorHooks.h"
 
 namespace evobox
@@ -31,7 +32,7 @@ int GiftAction::stopTimerMs() const
 
 void GiftAction::setSoundUidUndoable(Uid uid)
 {
-    setFieldUndoable<Uid>(this, soundUid, uid, "Set gift sound");
+    setFieldUndoable<Uid>(this, soundUid, uid, LTR("undo.setGiftSound", "Set gift sound"));
 }
 
 void GiftAction::seedFromCatalog(int64_t id, const std::string& name, int diamonds, const std::string& iconUrl, int type)
@@ -41,7 +42,7 @@ void GiftAction::seedFromCatalog(int64_t id, const std::string& name, int diamon
     if (diamonds > 0) cachedDiamonds = diamonds;
     if (!iconUrl.empty()) cachedIconUrl = iconUrl;
     if (type) cachedType = type;
-    setNiceName(cachedName.empty() ? ("Gift " + std::to_string(id)) : cachedName);
+    setNiceName(cachedName.empty() ? (std::string(LTR("gift.fallbackNamePrefix", "Gift ")) + std::to_string(id)) : cachedName);
 }
 
 Uid GiftAction::triggerableUid() const
@@ -117,7 +118,7 @@ GiftAction* GiftActionManager::addFromTransientUndoable(const GiftAction& transi
     saved["_index"] = indexOf(raw);
     Uid uid = raw->uid;
     GiftActionManager* self = this;
-    organic::UndoManager::get().pushDone("Configure gift",
+    organic::UndoManager::get().pushDone(LTR("undo.configureGift", "Configure gift"),
         [self, saved] { self->addItemFromJson(saved); },
         [self, uid]   { self->removeItem(uid); },
         { self });
