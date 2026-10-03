@@ -27,6 +27,23 @@ bool Fonts::load(float scale)
     if (!uiPath.empty()) ui = io.Fonts->AddFontFromFileTTF(uiPath.c_str(), baseSize, &cfg);
     else ui = io.Fonts->AddFontDefault(&cfg);
 
+    // Merge Noto Sans CJK SC for Cyrillic (Russian) and Simplified Chinese: Roboto has no Cyrillic
+    // or CJK glyphs, so without this fallback those translations render as boxes. ImGui 1.92
+    // rasterises on demand, so merging the whole font (no glyph-range table) only costs atlas space
+    // for the glyphs actually drawn. Latin stays on Roboto because it is listed first.
+    std::string cjkPath = paths::fontPath("NotoSansCJKsc-Regular.otf");
+    if (!cjkPath.empty())
+    {
+        ImFontConfig nc;
+        nc.MergeMode = true;
+        nc.SizePixels = baseSize;
+        io.Fonts->AddFontFromFileTTF(cjkPath.c_str(), baseSize, &nc);
+    }
+    else
+    {
+        OLOGW("Fonts", "NotoSansCJKsc-Regular.otf not found: Russian/Chinese text will render as boxes");
+    }
+
     // Merge Phosphor Regular into the UI font (icons inline with text)
     if (!phRegular.empty())
     {

@@ -84,6 +84,7 @@ mkdir -p "$RESDIR/fonts"
 cp "$ROOT/third_party/web/src/regular/Phosphor.ttf" "$RESDIR/fonts/"
 cp "$ROOT/third_party/web/src/fill/Phosphor-Fill.ttf" "$RESDIR/fonts/"
 cp "$ROOT/third_party/imgui/misc/fonts/Roboto-Medium.ttf" "$RESDIR/fonts/"
+cp "$ROOT/third_party/fonts/NotoSansCJKsc-Regular.otf" "$RESDIR/fonts/"
 for f in README.md README.zh-CN.md; do [[ -f "$ROOT/$f" ]] && cp "$ROOT/$f" "$RESDIR/"; done
 [[ -f "$ROOT/windows/LICENSES.txt" ]] && cp "$ROOT/windows/LICENSES.txt" "$RESDIR/"
 if [[ "$TIKTOK" == ON ]]; then

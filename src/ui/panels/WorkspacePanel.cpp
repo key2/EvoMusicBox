@@ -1,4 +1,5 @@
 #include "ui/panels/WorkspacePanel.h"
+#include "ui/I18n.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
 
@@ -19,7 +20,7 @@ void WorkspacePanel::draw(bool* open)
 {
     ImGui::SetNextWindowSize(ImVec2(900, 600), ImGuiCond_FirstUseEver);
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-    if (ImGui::Begin("Workspace", open, flags))
+    if (ImGui::Begin((TR("panel.workspace") + std::string("###Workspace")).c_str(), open, flags))
     {
         if (app_.performanceMode || !app_.tiktokAvailable())
         {
@@ -37,14 +38,14 @@ void WorkspacePanel::draw(bool* open)
                 lastTab = app_.prefs.activeTab;
             }
             (void)gf;
-            if (ImGui::BeginTabItem(ICON_PH_SQUARES_FOUR "  Sounds", nullptr, sf))
+            if (ImGui::BeginTabItem((std::string(ICON_PH_SQUARES_FOUR "  ") + TR("workspace.sounds")).c_str(), nullptr, sf))
             {
                 app_.prefs.activeTab = lastTab = WorkspaceTab::Sounds;
                 soundboard_.draw();
                 ImGui::EndTabItem();
             }
 #ifdef EVOBOX_WITH_TIKTOK
-            std::string giftLabel = std::string(ICON_PH_GIFT "  Gifts");
+            std::string giftLabel = std::string(ICON_PH_GIFT "  ") + TR("workspace.gifts");
             if (app_.live.state == LiveState::Connected) giftLabel += "  " ICON_PH_BROADCAST;
             if (ImGui::BeginTabItem(giftLabel.c_str(), nullptr, gf))
             {

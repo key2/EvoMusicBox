@@ -91,6 +91,33 @@ The build deploys `assets/`, `fonts/` (Roboto + Phosphor) and `tiktok-js/` next 
 `build/generated/IconsPhosphor.h` is generated from Phosphor's `style.css` by
 `tools/gen_phosphor_icons.py` (CMake falls back to a pure-CMake generator without Python).
 
+## Languages / translations
+
+The UI ships in English, Russian and Chinese, switchable at runtime from the **Language** menu (or
+Settings ▸ Interface). The choice is saved in prefs (`language`) and restored on launch.
+
+Translations are **not** hard-coded: every UI string lives in a flat JSON catalogue under
+`assets/lang/<code>.json` (`en.json`, `ru.json`, `zh.json`), keyed by stable dotted identifiers like
+`menu.file.save`. The code looks each one up with `TR("key")` / `trFmt("key", arg)` (see
+`src/ui/I18n.*`); a missing key falls back to English and then to the key itself, so nothing ever
+crashes on an incomplete translation.
+
+To **update wording**, edit the value in the relevant `*.json` — no rebuild of logic needed, the
+file is read at startup (it is copied next to the executable / into the macOS bundle's
+`Contents/Resources/` by the normal asset deploy).
+
+To **add a language**, drop a new `assets/lang/<code>.json` next to the others (copy `en.json`, keep
+the keys, translate the values, set `"language.native"` to the language's own name). It appears in
+the Language menu automatically. Keep the printf specifiers (`%s`, `%d`, `%.1f`, …) intact and in a
+form the string allows; the format arguments are positional.
+
+Fonts: English/Russian render from Roboto, Chinese (and Cyrillic fallback) from the bundled
+`NotoSansCJKsc-Regular.otf`, merged on top of Roboto in `src/ui/Fonts.cpp` (ImGui 1.92 rasterises
+glyphs on demand, so the merge only costs atlas space for glyphs actually drawn).
+
+Note: a few model-layer labels that double as save-file keys (OSC phase names) and TikTok
+room-event identifiers remain in English to keep project files portable across languages.
+
 ## macOS build (self-contained .app)
 
 The plain `cmake`/`ninja` build above works on macOS (GLFW builds its Cocoa backend; the app asks

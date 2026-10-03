@@ -1,4 +1,5 @@
 #include "ui/panels/ClipEditorPanel.h"
+#include "ui/I18n.h"
 #include "media/ClipRenderer.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
@@ -64,15 +65,15 @@ void ClipEditorPanel::playSelected()
 void ClipEditorPanel::mediaInfo(const MediaRef& ref, double duration, int rate, int channels)
 {
     const auto& th = theme::colors();
-    std::string name = ref.fileName().empty() ? "(no media)" : ref.fileName();
+    std::string name = ref.fileName().empty() ? TR("clip.noMedia") : ref.fileName();
     ImGui::AlignTextToFramePadding();
     ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.05f);
     ImGui::TextUnformatted(ellipsize(name, 220 * theme::scale()).c_str());
     ImGui::PopFont();
     if (!ref.path.empty() && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", ref.path.c_str());
-    std::string chs = channels == 1 ? "Mono" : channels == 2 ? "Stereo" : str::format("%d ch", channels);
+    std::string chs = channels == 1 ? TR("clip.mono") : channels == 2 ? TR("clip.stereo") : str::format(TR("clip.channels"), channels);
     ImGui::SameLine();
-    TextDim("%s  ·  %.1f kHz  ·  %s%s", formatTime(duration).c_str(), rate / 1000.0, chs.c_str(), ref.hasVideo ? "  ·  video" : "");
+    TextDim(TR("clip.mediaInfo"), formatTime(duration).c_str(), rate / 1000.0, chs.c_str(), ref.hasVideo ? TR("clip.video") : "");
     (void)th;
 }
 
@@ -87,32 +88,33 @@ void ClipEditorPanel::transport(Sound& s, double duration, const organic::AudioB
     ImGui::SameLine(0, 16);
     // music: Play <-> Stop like the tile; effect: Play stacks, a separate Stop ends every voice
     bool stopGlyph = playing && !effect;
-    if (AccentButton(stopGlyph ? ICON_PH_STOP " Stop" : ICON_PH_PLAY " Play", ImVec2(0, 0))) togglePlay(s);
+    std::string playLabel = stopGlyph ? (std::string(ICON_PH_STOP " ") + TR("clip.stop")) : (std::string(ICON_PH_PLAY " ") + TR("clip.play"));
+    if (AccentButton(playLabel.c_str(), ImVec2(0, 0))) togglePlay(s);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        ImGui::SetTooltip(effect ? "Play the selection (stacks another voice) - Ctrl+Space" : "Play / stop the selection, as the tile does (Ctrl+Space)");
+        ImGui::SetTooltip("%s", effect ? TR("clip.playSelTooltipEffect") : TR("clip.playSelTooltip"));
     if (effect && playing)
     {
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Text, th.playing);
-        std::string lbl = s.rt.activeVoices > 1 ? str::format(ICON_PH_STOP " Stop x%d", s.rt.activeVoices) : std::string(ICON_PH_STOP " Stop");
+        std::string lbl = s.rt.activeVoices > 1 ? str::format((std::string(ICON_PH_STOP " ") + TR("clip.stopX")).c_str(), s.rt.activeVoices) : (std::string(ICON_PH_STOP " ") + TR("clip.stop"));
         if (GhostButton(lbl.c_str(), ImVec2(0, 0))) app_.playback.stop(s.uid);
         ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Stop every play of this effect");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("clip.stopEveryPlay"));
     }
     ImGui::SameLine();
-    if (ToggleButton(ICON_PH_REPEAT, loop_, ImVec2(bh, 0), "Loop the selection when playing from here")) loop_ = !loop_;
+    if (ToggleButton(ICON_PH_REPEAT, loop_, ImVec2(bh, 0), TR("clip.loopTooltip"))) loop_ = !loop_;
     ImGui::SameLine(0, 12);
     float waveW = ImGui::GetContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
-    if (IconButton(ICON_PH_MAGNIFYING_GLASS_MINUS, "Zoom out (Ctrl+wheel)", ImVec2(bh, 0)))
+    if (IconButton(ICON_PH_MAGNIFYING_GLASS_MINUS, TR("clip.zoomOut"), ImVec2(bh, 0)))
         WaveformEditor::zoomAt(view_, 0.7, (selStart + selEnd) * 0.5, duration, waveW);
     ImGui::SameLine(0, 2);
-    if (IconButton(ICON_PH_MAGNIFYING_GLASS_PLUS, "Zoom in (Ctrl+wheel)", ImVec2(bh, 0)))
+    if (IconButton(ICON_PH_MAGNIFYING_GLASS_PLUS, TR("clip.zoomIn"), ImVec2(bh, 0)))
         WaveformEditor::zoomAt(view_, 1.4, (selStart + selEnd) * 0.5, duration, waveW);
     ImGui::SameLine(0, 2);
-    if (IconButton(ICON_PH_ARROWS_OUT_LINE_HORIZONTAL, "Fit the whole file (double-click the waveform)", ImVec2(bh, 0)))
+    if (IconButton(ICON_PH_ARROWS_OUT_LINE_HORIZONTAL, TR("clip.fitWhole"), ImVec2(bh, 0)))
         view_.pixelsPerSecond = 0;
     ImGui::SameLine(0, 2);
-    if (IconButton(ICON_PH_SELECTION, "Zoom to the selection", ImVec2(bh, 0)) && selEnd > selStart)
+    if (IconButton(ICON_PH_SELECTION, TR("clip.zoomToSel"), ImVec2(bh, 0)) && selEnd > selStart)
     {
         double len = (selEnd - selStart) * 1.1;
         view_.pixelsPerSecond = waveW / len;
@@ -124,7 +126,7 @@ void ClipEditorPanel::transport(Sound& s, double duration, const organic::AudioB
         float peak = ClipRenderer::peakAbs(*src, (size_t)std::max(0.0, selStart * src->sampleRate), (size_t)std::max(0.0, selEnd * src->sampleRate)) * ClipRenderer::dbToLinear(s.gainDb());
         float peakDb = peak > 1e-6f ? 20.f * std::log10(peak) : -120.f;
         ImGui::AlignTextToFramePadding();
-        TextDim("peak %.1f dBFS%s", peakDb, s.normalize() ? " (normalized)" : "");
+        TextDim(TR("clip.peak"), peakDb, s.normalize() ? TR("clip.normalized") : "");
     }
 }
 
@@ -140,13 +142,13 @@ float ClipEditorPanel::stickerFrameStrip(Sound& s)
     float stripH = thumbH + ImGui::GetTextLineHeightWithSpacing() + 8;
     ImGui::BeginGroup();
     ImGui::AlignTextToFramePadding();
-    if (pending) TextDim(ICON_PH_CIRCLE_NOTCH " Extracting frames of the video for the sticker...");
-    else TextDim(ICON_PH_FILM_STRIP " Pick a frame of the video as the tile picture:");
+    if (pending) TextDim("%s", (std::string(ICON_PH_CIRCLE_NOTCH " ") + TR("clip.extractingFrames")).c_str());
+    else TextDim("%s", (std::string(ICON_PH_FILM_STRIP " ") + TR("clip.pickFrame")).c_str());
     ImGui::SameLine();
-    if (GhostButton(ICON_PH_ARROWS_CLOCKWISE " More frames", ImVec2(0, 0)) && !pending) app_.requestStickerFrames(s, 32);
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Extract 32 frames instead of 16");
+    if (GhostButton((std::string(ICON_PH_ARROWS_CLOCKWISE " ") + TR("clip.moreFrames")).c_str(), ImVec2(0, 0)) && !pending) app_.requestStickerFrames(s, 32);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("clip.moreFramesTooltip"));
     ImGui::SameLine();
-    if (GhostButton(ICON_PH_X " Hide", ImVec2(0, 0))) app_.clearStickerFrames(s.uid);
+    if (GhostButton((std::string(ICON_PH_X " ") + TR("clip.hide")).c_str(), ImVec2(0, 0))) app_.clearStickerFrames(s.uid);
     if (frames)
     {
         ImGui::BeginChild("##frames", ImVec2(0, thumbH + 6), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
@@ -162,7 +164,7 @@ float ClipEditorPanel::stickerFrameStrip(Sound& s)
                 clicked = ImGui::ImageButton("##frame", ImTextureRef((ImTextureID)(intptr_t)f.texture.glId), sz);
             else
                 clicked = ImGui::Button(ICON_PH_IMAGE, sz);
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s — click to use as the sticker", formatTime(f.time).c_str());
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip(TR("clip.frameTooltip"), formatTime(f.time).c_str());
             if (clicked && f.image)
             {
                 std::string err;
@@ -188,23 +190,24 @@ void ClipEditorPanel::drawSound(Sound& s)
 
     mediaInfo(s.source, duration, asset ? asset->sampleRate() : s.source.sampleRate, asset ? asset->channels() : s.source.channels);
     if (asset) transport(s, duration, src);
-    float dupW = ImGui::CalcTextSize(ICON_PH_COPY " Duplicate").x + ImGui::GetStyle().FramePadding.x * 2 + 8;
+    std::string dupLabel = std::string(ICON_PH_COPY " ") + TR("clip.duplicate");
+    float dupW = ImGui::CalcTextSize(dupLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2 + 8;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - dupW);
-    if (ImGui::Button(ICON_PH_COPY " Duplicate", ImVec2(dupW, 0))) app_.importer.duplicateSound(s);
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Edits update this tile; duplicate first to keep the original");
+    if (ImGui::Button(dupLabel.c_str(), ImVec2(dupW, 0))) app_.importer.duplicateSound(s);
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("clip.duplicateTooltip"));
 
     if (!asset)
     {
-        if (s.rt.sourceLoading) TextDim(ICON_PH_CIRCLE_NOTCH " Loading source media...");
+        if (s.rt.sourceLoading) TextDim("%s", (std::string(ICON_PH_CIRCLE_NOTCH " ") + TR("clip.loadingSource")).c_str());
         else if (s.source.resolve(app_.project.bundleDir).empty())
         {
-            ImGui::TextColored(th.warning, ICON_PH_WARNING " Source media not found: %s", s.source.fileName().c_str());
+            ImGui::TextColored(th.warning, (std::string(ICON_PH_WARNING " ") + TR("clip.sourceNotFound")).c_str(), s.source.fileName().c_str());
             ImGui::SameLine();
-            if (ImGui::Button(ICON_PH_FOLDER_OPEN " Relink media...")) app_.relinkRequestUid = s.uid;
+            if (ImGui::Button((std::string(ICON_PH_FOLDER_OPEN " ") + TR("clip.relinkMedia")).c_str())) app_.relinkRequestUid = s.uid;
             ImGui::SameLine();
-            TextDim("the tile still plays its rendered clip");
+            TextDim("%s", TR("clip.stillPlaysRendered"));
         }
-        else if (ImGui::Button(ICON_PH_ARROW_COUNTER_CLOCKWISE " Load source")) app_.openSourceForEditing(s);
+        else if (ImGui::Button((std::string(ICON_PH_ARROW_COUNTER_CLOCKWISE " ") + TR("clip.loadSource")).c_str())) app_.openSourceForEditing(s);
         // still show the rendered clip's waveform when available
         if (s.rt.clip)
         {
@@ -245,7 +248,7 @@ void ClipEditorPanel::drawSound(Sound& s)
         if (os != ns || oe != ne)
         {
             Sound* sp = &s;
-            organic::UndoManager::get().pushDone("Trim clip",
+            organic::UndoManager::get().pushDone(TR("clip.trimClip"),
                 [sp, ns, ne] { sp->setTrim(ns, ne); },
                 [sp, os, oe] { sp->setTrim(os, oe); }, { sp });
         }
@@ -256,12 +259,12 @@ void ClipEditorPanel::drawSound(Sound& s)
     if (TrimFields("trim", s0, s1, duration).changed) s.setTrimUndoable(s0, s1);
     ImGui::SameLine(0, 18);
     bool norm = s.normalize();
-    if (ImGui::Checkbox("Normalize", &norm)) s.normalizeP->setUndoable(norm);
+    if (ImGui::Checkbox(TR("clip.normalize"), &norm)) s.normalizeP->setUndoable(norm);
     ImGui::SameLine();
     ImGui::SetNextItemWidth(100 * theme::scale());
     float g = s.gainDb();
     static Sound* s_gainSound = nullptr; static float s_gainOld = 0;
-    if (ImGui::SliderFloat("##gain", &g, -24.f, 24.f, "%.1f dB"))
+    if (ImGui::SliderFloat("##gain", &g, -24.f, 24.f, TR("clip.gainDb")))
     {
         if (s_gainSound != &s) { s_gainSound = &s; s_gainOld = s.gainDb(); }
         s.gainDbP->setValue(g);
@@ -270,24 +273,24 @@ void ClipEditorPanel::drawSound(Sound& s)
     if (ImGui::IsItemDeactivatedAfterEdit() && s_gainSound == &s) { s.gainDbP->recordEdit(s_gainOld, s.gainDbP->value); s_gainSound = nullptr; }
     ImGui::SameLine(0, 12);
     ImGui::AlignTextToFramePadding();
-    if (s.rt.renderPending) TextDim(ICON_PH_CIRCLE_NOTCH " rendering...");
-    else if (s.rt.clipDirty) TextDim("re-render pending");
-    else TextDim(ICON_PH_CHECK " clip up to date");
+    if (s.rt.renderPending) TextDim("%s", (std::string(ICON_PH_CIRCLE_NOTCH " ") + TR("clip.rendering")).c_str());
+    else if (s.rt.clipDirty) TextDim("%s", TR("clip.rerenderPending"));
+    else TextDim("%s", (std::string(ICON_PH_CHECK " ") + TR("clip.upToDate")).c_str());
 }
 
 void ClipEditorPanel::draw(bool* open)
 {
     ImGui::SetNextWindowSize(ImVec2(900, 260), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Clip Editor", open))
+    if (ImGui::Begin((TR("panel.clipEditor") + std::string("###Clip Editor")).c_str(), open))
     {
         if (Sound* s = app_.selectedSound()) drawSound(*s);
         else
         {
             target_ = nullptr; // deselecting never stops the sound: it is the tile's playback
             if (app_.importer.pendingImports() > 0)
-                EmptyState("Decoding media...", str::format("%d file(s) in progress", app_.importer.pendingImports()).c_str(), ICON_PH_CIRCLE_NOTCH);
+                EmptyState(TR("clip.decodingMedia"), evobox::trFmt("clip.filesInProgress", app_.importer.pendingImports()), ICON_PH_CIRCLE_NOTCH);
             else
-                EmptyState("Select a sound to edit its clip", "or drop media into the soundboard: it becomes a tile right away", ICON_PH_WAVEFORM);
+                EmptyState(TR("clip.selectToEdit"), TR("clip.selectToEditSub"), ICON_PH_WAVEFORM);
         }
         confirm_.draw();
     }

@@ -1,4 +1,5 @@
 #include "ui/widgets/WaveformEditor.h"
+#include "ui/I18n.h"
 #include "ui/Theme.h"
 #include "util/TimeFormat.h"
 #include <algorithm>
@@ -155,7 +156,7 @@ WaveformResult WaveformEditor::draw(const char* id, const organic::Peaks* peaks,
     }
     else
     {
-        const char* msg = "No waveform";
+        const char* msg = TR("wave.noWaveform");
         ImVec2 ts = ImGui::CalcTextSize(msg);
         dl->AddText(ImVec2(p0.x + (size.x - ts.x) * 0.5f, w0.y + (bodyH - ts.y) * 0.5f), col.rulerText, msg);
     }

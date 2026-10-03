@@ -1,4 +1,5 @@
 #include "ui/widgets/PhaseTimeline.h"
+#include "ui/I18n.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
 #include "ui/widgets/Common.h"
@@ -73,7 +74,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
         dl->AddLine(ImVec2(x, lineY - 18), ImVec2(x, lineY + 10), theme::u32(col), 2.f);
         dl->AddCircleFilled(ImVec2(x, lineY), 6.f, theme::u32(col));
         std::string lbl = ph.niceName + "  " + formatMs((long long)ms);
-        std::string cnt = std::to_string(ph.commands.items.size()) + (ph.commands.items.size() == 1 ? " cmd" : " cmds");
+        std::string cnt = std::to_string(ph.commands.items.size()) + (ph.commands.items.size() == 1 ? std::string(" ") + TR("phase.cmd") : std::string(" ") + TR("phase.cmds"));
         ImVec2 ts = ImGui::CalcTextSize(lbl.c_str());
         float lx = std::clamp(x - ts.x * 0.5f, p0.x + 4, p1.x - ts.x - 4);
         dl->AddText(ImVec2(lx, lineY - 18 - ts.y - 2), theme::u32(c.text), lbl.c_str());
@@ -106,7 +107,7 @@ bool PhaseTimeline(const char* id, OscActions& actions, const PhaseTimelineState
     for (auto& php : actions.phases)
     {
         if (php->anchor != Anchor::End) continue;
-        std::string lbl = php->niceName + "  +" + formatMs(std::max(0, php->delayMs())) + " after end";
+        std::string lbl = php->niceName + "  +" + formatMs(std::max(0, php->delayMs())) + TR("phase.afterEnd");
         ImVec2 ts = ImGui::CalcTextSize(lbl.c_str());
         dl->AddText(ImVec2(ex - ts.x, p0.y + 6), theme::u32(c.accent), lbl.c_str());
         ex -= ts.x + 12;

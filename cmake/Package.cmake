@@ -22,6 +22,7 @@ install(FILES
     ${CMAKE_SOURCE_DIR}/third_party/web/src/regular/Phosphor.ttf
     ${CMAKE_SOURCE_DIR}/third_party/web/src/fill/Phosphor-Fill.ttf
     ${IMGUI_DIR}/misc/fonts/Roboto-Medium.ttf
+    ${CMAKE_SOURCE_DIR}/third_party/fonts/NotoSansCJKsc-Regular.otf
     DESTINATION fonts)
 install(FILES ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/README.zh-CN.md DESTINATION .)
 if(EXISTS ${CMAKE_SOURCE_DIR}/windows/LICENSES.txt)

@@ -31,6 +31,8 @@ struct Prefs
     WorkspaceTab activeTab = WorkspaceTab::Sounds;
     bool performanceMode = false;
     float uiScale = 1.f;
+    // UI language code ("en", "ru", "zh"); matches a file in assets/lang/<code>.json
+    std::string language = "en";
     // tiktok
     std::string tiktokUsername;
     bool tiktokAutoConnect = false;

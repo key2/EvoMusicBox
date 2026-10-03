@@ -1,4 +1,5 @@
 #include "ui/widgets/StickerPicker.h"
+#include "ui/I18n.h"
 #include "app/ImportController.h"
 #include "model/Sound.h"
 #include "ui/Fonts.h"
@@ -78,9 +79,9 @@ const std::vector<Group>& groups()
         }
         if (g.empty())
         {
-            g.push_back({ "Sound", { "speaker-high", "music-notes", "microphone", "headphones", "bell", "megaphone", "waveform" } });
-            g.push_back({ "Effects", { "sparkle", "lightning", "fire", "bomb", "confetti", "star", "rocket" } });
-            g.push_back({ "Reactions", { "hands-clapping", "thumbs-up", "heart", "smiley", "skull", "ghost", "trophy", "gift" } });
+            g.push_back({ TR("sticker.group.sound"), { "speaker-high", "music-notes", "microphone", "headphones", "bell", "megaphone", "waveform" } });
+            g.push_back({ TR("sticker.group.effects"), { "sparkle", "lightning", "fire", "bomb", "confetti", "star", "rocket" } });
+            g.push_back({ TR("sticker.group.reactions"), { "hands-clapping", "thumbs-up", "heart", "smiley", "skull", "ghost", "trophy", "gift" } });
         }
     }
     return g;
@@ -133,36 +134,36 @@ bool StickerPickerBody(const char* id, std::string& outSticker, const ImVec4& ti
             else ImGui::Dummy(ImVec2(edge, edge));
             ImGui::SameLine();
             ImGui::BeginGroup();
-            TextDim("Current picture");
-            if (ImGui::SmallButton(ICON_PH_X " Remove picture")) { outSticker = "ph:speaker-high"; picked = true; }
+            TextDim("%s", TR("sticker.currentPicture"));
+            if (ImGui::SmallButton((std::string(ICON_PH_X " ") + TR("sticker.removePicture")).c_str())) { outSticker = "ph:speaker-high"; picked = true; }
             ImGui::EndGroup();
         }
-        if (ImGui::Button(ICON_PH_IMAGE " Picture from file...") && StickerHooks::pickImageFile)
+        if (ImGui::Button((std::string(ICON_PH_IMAGE " ") + TR("sticker.pictureFromFile")).c_str()) && StickerHooks::pickImageFile)
         {
             StickerHooks::pickImageFile(*forSound);
             ImGui::CloseCurrentPopup();
         }
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("PNG, JPEG, WebP... scaled to 256 px and stored in the project");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("sticker.pictureFromFileTooltip"));
         bool video = forSound->source.hasVideo || ImportController::looksLikeVideo(forSound->source.path);
         if (video)
         {
             ImGui::SameLine();
-            if (ImGui::Button(ICON_PH_FILM_STRIP " Frames from the video") && StickerHooks::pickVideoFrames)
+            if (ImGui::Button((std::string(ICON_PH_FILM_STRIP " ") + TR("sticker.framesFromVideo")).c_str()) && StickerHooks::pickVideoFrames)
             {
                 StickerHooks::pickVideoFrames(*forSound);
                 ImGui::CloseCurrentPopup();
             }
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Extracts frames of the movie; pick one in the Clip Editor");
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("sticker.framesFromVideoTooltip"));
         }
         ImGui::Separator();
     }
     ImGui::SetNextItemWidth(-1);
-    ImGui::InputTextWithHint("##filter", ICON_PH_MAGNIFYING_GLASS " Search all Phosphor icons...", filter, sizeof(filter));
+    ImGui::InputTextWithHint("##filter", (std::string(ICON_PH_MAGNIFYING_GLASS " ") + TR("sticker.searchIcons")).c_str(), filter, sizeof(filter));
     ImGui::BeginChild("##stickers", ImVec2(420 * theme::scale(), 300 * theme::scale()), ImGuiChildFlags_None);
     if (filter[0])
     {
         auto res = icons::search(filter, 160);
-        if (res.empty()) TextDim("No icon matches '%s'", filter);
+        if (res.empty()) TextDim(TR("sticker.noIconMatch"), filter);
         else if (iconGrid(res, outSticker, tint, outSticker)) picked = true;
     }
     else
@@ -180,13 +181,13 @@ bool StickerPickerBody(const char* id, std::string& outSticker, const ImVec4& ti
 #ifdef EVOBOX_WITH_EMOJI
     ImGui::Separator();
     ImGui::SetNextItemWidth(120 * theme::scale());
-    if (ImGui::InputTextWithHint("##emoji", "emoji", emoji, sizeof(emoji), ImGuiInputTextFlags_EnterReturnsTrue) && emoji[0])
+    if (ImGui::InputTextWithHint("##emoji", TR("sticker.emojiHint"), emoji, sizeof(emoji), ImGuiInputTextFlags_EnterReturnsTrue) && emoji[0])
     {
         outSticker = std::string("emoji:") + emoji;
         picked = true;
     }
     ImGui::SameLine();
-    TextDim("Type or paste an emoji and press Enter");
+    TextDim("%s", TR("sticker.emojiTip"));
 #else
     (void)emoji;
 #endif
@@ -220,7 +221,7 @@ bool StickerButton(const char* id, std::string& sticker, const ImVec4& tint, ImV
         ImGui::PopFont();
         ImGui::PopStyleColor();
     }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip(forSound ? "Change sticker or picture" : "Change sticker");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", forSound ? TR("sticker.changeTooltipPic") : TR("sticker.changeTooltip"));
     if (clicked) ImGui::OpenPopup("##stickerPopup");
     bool changed = false;
     if (ImGui::BeginPopup("##stickerPopup"))

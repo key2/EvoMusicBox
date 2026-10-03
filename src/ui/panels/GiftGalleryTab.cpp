@@ -1,6 +1,8 @@
 #include "ui/panels/WorkspacePanel.h"
+#include "ui/I18n.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
+#include "ui/widgets/Common.h"
 #include "ui/widgets/Tiles.h"
 #include "util/Strings.h"
 #include "util/TimeFormat.h"
@@ -31,16 +33,16 @@ void GiftGalleryTab::header()
     ImGui::SameLine(0, 2);
     ImGui::SetNextItemWidth(180 * theme::scale());
     ImGui::BeginDisabled(connected || connecting);
-    bool enter = ImGui::InputTextWithHint("##user", "tiktok username", username_, sizeof(username_), ImGuiInputTextFlags_EnterReturnsTrue);
+    bool enter = ImGui::InputTextWithHint("##user", TR("gift.usernameHint"), username_, sizeof(username_), ImGuiInputTextFlags_EnterReturnsTrue);
     ImGui::EndDisabled();
     ImGui::SameLine();
     if (connected || connecting)
     {
-        if (ImGui::Button(ICON_PH_WIFI_SLASH " Disconnect")) app_.liveDisconnect();
+        if (ImGui::Button((std::string(ICON_PH_WIFI_SLASH " ") + TR("gift.disconnect")).c_str())) app_.liveDisconnect();
     }
     else
     {
-        if (AccentButton(ICON_PH_BROADCAST " Connect") || enter)
+        if (AccentButton((std::string(ICON_PH_BROADCAST " ") + TR("gift.connect")).c_str()) || enter)
         {
             std::string u = str::cleanUsername(username_);
             if (!u.empty()) app_.liveConnect(u);
@@ -49,13 +51,13 @@ void GiftGalleryTab::header()
     ImGui::SameLine();
     // state dot + text
     ImVec4 dot = th.textFaint;
-    std::string stateText = liveStateName(st);
+    std::string stateText = liveStateLabel(st);
     switch (st)
     {
-    case LiveState::Connected: dot = th.playing; stateText = "Connected · " + str::groupThousands(app_.live.viewers) + " viewers"; break;
+    case LiveState::Connected: dot = th.playing; stateText = evobox::trFmt("gift.connected", str::groupThousands(app_.live.viewers)); break;
     case LiveState::Connecting: dot = th.warning; break;
-    case LiveState::Ended: dot = th.textDim; stateText = "Stream ended"; break;
-    case LiveState::Error: dot = th.danger; stateText = "Error: " + app_.live.errorMessage; break;
+    case LiveState::Ended: dot = th.textDim; stateText = TR("gift.streamEnded"); break;
+    case LiveState::Error: dot = th.danger; stateText = evobox::trFmt("gift.errorPrefix", app_.live.errorMessage); break;
     default: break;
     }
     Dot(dot, 5.f);
@@ -66,35 +68,35 @@ void GiftGalleryTab::header()
     if (st == LiveState::Error && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", app_.live.errorMessage.c_str());
 
     // right: catalog info + refresh
-    std::string catInfo = str::format("%zu gifts", app_.catalog.size());
+    std::string catInfo = str::format(TR("gift.catalogCount"), (size_t)app_.catalog.size());
     if (app_.catalog.lastUpdateUnix)
     {
         long long nowUnix = (long long)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        catInfo += " · updated " + formatAgo((double)(nowUnix - app_.catalog.lastUpdateUnix));
+        catInfo += evobox::trFmt("gift.catalogUpdated", formatAgo((double)(nowUnix - app_.catalog.lastUpdateUnix)));
     }
     float rw = ImGui::CalcTextSize(catInfo.c_str()).x + ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.x * 2;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - rw);
     ImGui::AlignTextToFramePadding();
     TextDim("%s", catInfo.c_str());
     ImGui::SameLine();
-    if (IconButton(ICON_PH_ARROWS_CLOCKWISE, "Refresh the gift catalog (reconnects)", ImVec2(ImGui::GetFrameHeight(), 0), !username_[0] == false))
+    if (IconButton(ICON_PH_ARROWS_CLOCKWISE, TR("gift.refreshTooltip"), ImVec2(ImGui::GetFrameHeight(), 0), !username_[0] == false))
         app_.liveRefreshCatalog();
 
     // second row: search · sort · simulate selected
     ImGui::SetNextItemWidth(std::clamp(ImGui::GetContentRegionAvail().x * 0.35f, 140.f, 320.f));
     static char search[64] = "";
-    if (ImGui::InputTextWithHint("##gsearch", ICON_PH_MAGNIFYING_GLASS " Search gifts...", search, sizeof(search)))
+    if (ImGui::InputTextWithHint("##gsearch", (std::string(ICON_PH_MAGNIFYING_GLASS " ") + TR("gift.searchHint")).c_str(), search, sizeof(search)))
         app_.giftSearch = search;
     if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape)) { search[0] = 0; app_.giftSearch.clear(); }
     ImGui::SameLine();
-    const char* sorts[] = { "Name", "Diamonds", "Configured first", "Recently received" };
+    const char* sorts[] = { TR("gift.sort.name"), TR("gift.sort.diamonds"), TR("gift.sort.configured"), TR("gift.sort.received") };
     int sort = (int)app_.giftSort;
     ImGui::SetNextItemWidth(170 * theme::scale());
     if (ImGui::Combo("##gsort", &sort, sorts, 4)) app_.giftSort = (GiftSort)sort;
     ImGui::SameLine();
     GiftAction* selGift = app_.selectedGift();
     ImGui::BeginDisabled(!selGift);
-    if (ImGui::Button(ICON_PH_PLAY " Simulate selected") && selGift) app_.simulateGift(selGift->giftId);
+    if (ImGui::Button((std::string(ICON_PH_PLAY " ") + TR("gift.simulateSelected")).c_str()) && selGift) app_.simulateGift(selGift->giftId);
     ImGui::EndDisabled();
     ImGui::Separator();
 }
@@ -150,12 +152,12 @@ void GiftGalleryTab::rebuildSorted()
 void GiftGalleryTab::giftContextMenu(GiftInfo& g)
 {
     GiftAction* a = app_.project.giftActions.find(g.id);
-    if (ImGui::MenuItem(ICON_PH_PLAY "  Simulate")) app_.simulateGift(g.id);
-    if (ImGui::MenuItem(ICON_PH_PLAY "  Simulate x5 (streak)")) app_.simulateGift(g.id, 5);
+    if (ImGui::MenuItem((std::string(ICON_PH_PLAY "  ") + TR("gift.ctx.simulate")).c_str())) app_.simulateGift(g.id);
+    if (ImGui::MenuItem((std::string(ICON_PH_PLAY "  ") + TR("gift.ctx.simulateStreak")).c_str())) app_.simulateGift(g.id, 5);
     ImGui::Separator();
     static nlohmann::json s_clipboard;
-    if (ImGui::MenuItem(ICON_PH_COPY "  Copy actions", nullptr, false, a != nullptr)) s_clipboard = a->actions().save();
-    if (ImGui::MenuItem(ICON_PH_CLIPBOARD "  Paste actions", nullptr, false, !s_clipboard.is_null()))
+    if (ImGui::MenuItem((std::string(ICON_PH_COPY "  ") + TR("gift.ctx.copyActions")).c_str(), nullptr, false, a != nullptr)) s_clipboard = a->actions().save();
+    if (ImGui::MenuItem((std::string(ICON_PH_CLIPBOARD "  ") + TR("gift.ctx.pasteActions")).c_str(), nullptr, false, !s_clipboard.is_null()))
     {
         GiftAction* target = app_.selectGift(g.id);
         if (target)
@@ -163,21 +165,21 @@ void GiftGalleryTab::giftContextMenu(GiftInfo& g)
             nlohmann::json before = target->actions().save();
             nlohmann::json after = s_clipboard;
             GiftAction* tp = target;
-            organic::UndoManager::get().perform("Paste gift actions",
+            organic::UndoManager::get().perform(TR("gift.pasteActions"),
                 [tp, after] { tp->actions().clearCommands(); tp->actions().load(after); notifyStructureChanged(tp); },
                 [tp, before] { tp->actions().clearCommands(); tp->actions().load(before); notifyStructureChanged(tp); }, { tp });
         }
     }
-    if (ImGui::MenuItem(ICON_PH_TRASH "  Clear actions", nullptr, false, a != nullptr))
+    if (ImGui::MenuItem((std::string(ICON_PH_TRASH "  ") + TR("gift.ctx.clearActions")).c_str(), nullptr, false, a != nullptr))
     {
         GiftAction* ap = a;
-        confirm.open("Clear actions of '" + g.name + "'?", "The gift's OSC commands and sound are removed from the project.",
-                     [this, ap] { app_.project.giftActions.undoableRemove({ ap }); }, "Clear");
+        confirm.open(evobox::trFmt("gift.clearActions.title", g.name), TR("gift.clearActions.body"),
+                     [this, ap] { app_.project.giftActions.undoableRemove({ ap }); }, TR("dialog.clear"));
     }
-    if (ImGui::BeginMenu(ICON_PH_SPEAKER_HIGH "  Assign sound"))
+    if (ImGui::BeginMenu((std::string(ICON_PH_SPEAKER_HIGH "  ") + TR("gift.ctx.assignSound")).c_str()))
     {
         GiftAction* target = a;
-        if (ImGui::MenuItem("(none)", nullptr, !target || target->soundUid == 0))
+        if (ImGui::MenuItem(TR("gift.assignNone"), nullptr, !target || target->soundUid == 0))
             if (target) target->setSoundUidUndoable(0);
         for (Sound* s : app_.project.sounds.sounds())
         {
@@ -204,13 +206,13 @@ void GiftGalleryTab::gallery()
     ImGui::BeginChild("##gallery");
     if (app_.catalog.empty())
     {
-        EmptyState("No gift catalog yet", "Connect to a live room once to load its gift catalog", ICON_PH_GIFT);
+        EmptyState(TR("gift.empty.noCatalog"), TR("gift.empty.connectOnce"), ICON_PH_GIFT);
         ImGui::EndChild();
         return;
     }
     if (sorted_.empty())
     {
-        EmptyState("No gift matches", "Change the filter or the search", ICON_PH_FUNNEL);
+        EmptyState(TR("gift.empty.noMatch"), TR("gift.empty.changeFilter"), ICON_PH_FUNNEL);
         ImGui::EndChild();
         return;
     }

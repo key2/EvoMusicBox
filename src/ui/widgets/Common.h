@@ -5,12 +5,17 @@
 #include <functional>
 #include <string>
 #include "imgui.h"
+#include "live/LiveEventRouter.h"
 #include "ui/Theme.h"
 
 namespace evobox
 {
 namespace ui
 {
+
+// Localized name of a live-connection state for the UI (status bar, gift gallery, live monitor).
+// liveStateName() in the model stays English for logs/serialization; this is the translated label.
+const char* liveStateLabel(LiveState s);
 
 // 1 -> 0 over `duration` seconds after `startTime`; 0 when idle (startTime < 0).
 float pulse(double startTime, double now, double duration = 0.3);

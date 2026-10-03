@@ -1,4 +1,5 @@
 #include "ui/widgets/OscEditor.h"
+#include "ui/I18n.h"
 #include "app/TriggerController.h"
 #include "osc/OscCommandParser.h"
 #include "ui/Icons.h"
@@ -36,10 +37,9 @@ bool DelayField(const char* id, organic::Parameter& delayP, bool isTimer, bool a
         s_editing = nullptr;
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        ImGui::SetTooltip(isTimer ? "Timer: the commands are sent this many milliseconds after the trigger.\nRestarted when the same gift arrives again (Retrigger = Restart)."
-                                  : "Delay in milliseconds relative to the anchor (0 = exactly when it happens)");
+        ImGui::SetTooltip("%s", isTimer ? TR("osc.timerTooltip") : TR("osc.delayTooltip"));
     ImGui::SameLine(0, 4);
-    TextDim("ms");
+    TextDim("%s", TR("osc.ms"));
     ImGui::PopID();
     return changed;
 }
@@ -51,12 +51,12 @@ bool TargetCombo(const char* id, Uid& targetUid, OscTargetManager& targets, floa
     OscTarget* def = targets.defaultTarget();
     std::string label;
     if (cur) label = cur->displayName();
-    else label = (def ? def->displayName() : std::string("Localhost")) + " (default)";
+    else label = (def ? def->displayName() : std::string(TR("osc.localhost"))) + TR("osc.defaultSuffix");
     if (width > 0) ImGui::SetNextItemWidth(width);
     bool changed = false;
     if (ImGui::BeginCombo(id, label.c_str(), ImGuiComboFlags_None))
     {
-        std::string defLabel = (def ? def->displayName() : std::string("Localhost")) + " (default)";
+        std::string defLabel = (def ? def->displayName() : std::string(TR("osc.localhost"))) + TR("osc.defaultSuffix");
         if (ImGui::Selectable(defLabel.c_str(), targetUid == 0))
         {
             if (targetUid != 0) { targetUid = 0; changed = true; if (onChange) onChange(0); }
@@ -110,7 +110,7 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
     if (GhostButton(en ? ICON_PH_CHECK_SQUARE : ICON_PH_SQUARE, ImVec2(btnW, 0)))
         cmd.enabledP->setUndoable(!en);
     ImGui::PopStyleColor();
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip(en ? "Enabled (click to bypass)" : "Bypassed (click to enable)");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", en ? TR("osc.enabledTooltip") : TR("osc.bypassedTooltip"));
     ImGui::SameLine();
 
     // text
@@ -120,7 +120,7 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
     std::string text = cmd.text();
     static OscCommand* s_editing = nullptr;
     static std::string s_old;
-    if (ImGui::InputTextWithHint("##cmd", "/address arg ...", &text))
+    if (ImGui::InputTextWithHint("##cmd", TR("osc.addressHint"), &text))
     {
         if (s_editing != &cmd) { s_editing = &cmd; s_old = cmd.text(); }
         cmd.textP->setValue(text);
@@ -135,12 +135,12 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
     if (!valid) ImGui::PopStyleColor();
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
-        if (!valid) ImGui::SetTooltip("Invalid command: %s\nGrammar: /address arg arg ...  (ints, floats, \"strings\", true/false; i: f: s: prefixes)", parseErr.c_str());
-        else if (!cmd.rt.lastError.empty()) ImGui::SetTooltip("Last send failed: %s", cmd.rt.lastError.c_str());
+        if (!valid) ImGui::SetTooltip(TR("osc.invalidCommand"), parseErr.c_str());
+        else if (!cmd.rt.lastError.empty()) ImGui::SetTooltip(TR("osc.lastSendFailed"), cmd.rt.lastError.c_str());
         else
         {
             ParsedCommand pc = OscCommandParser::parse(cmd.text());
-            ImGui::SetTooltip("%s\ntype tags: %s", pc.message.toString().c_str(), pc.message.typeTags().c_str());
+            ImGui::SetTooltip(TR("osc.typeTags"), pc.message.toString().c_str(), pc.message.typeTags().c_str());
         }
     }
     ImGui::SameLine();
@@ -152,7 +152,7 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
 
     // test
     bool canTest = ctx.trigger && ctx.owner && valid;
-    if (IconButton(ICON_PH_PAPER_PLANE_TILT, "Send this command now (test)", ImVec2(btnW, 0), canTest))
+    if (IconButton(ICON_PH_PAPER_PLANE_TILT, TR("osc.sendNow"), ImVec2(btnW, 0), canTest))
         ctx.trigger->testCommand(*ctx.owner, phase, cmd);
     ImGui::SameLine();
 
@@ -160,18 +160,18 @@ bool OscCommandRow(OscCommand& cmd, OscPhase& phase, OscTargetManager& targets, 
     ImGui::PushStyleColor(ImGuiCol_Text, c.textDim);
     if (GhostButton(ICON_PH_X, ImVec2(btnW, 0))) remove = true;
     ImGui::PopStyleColor();
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Remove command");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("osc.removeCommand"));
 
     // context menu
     if (ImGui::BeginPopupContextItem("##rowctx"))
     {
-        if (ImGui::MenuItem(ICON_PH_PAPER_PLANE_TILT "  Test", nullptr, false, canTest)) ctx.trigger->testCommand(*ctx.owner, phase, cmd);
-        if (ImGui::MenuItem(ICON_PH_COPY "  Duplicate")) phase.commands.undoableDuplicate({ &cmd });
+        if (ImGui::MenuItem((std::string(ICON_PH_PAPER_PLANE_TILT "  ") + TR("osc.ctx.test")).c_str(), nullptr, false, canTest)) ctx.trigger->testCommand(*ctx.owner, phase, cmd);
+        if (ImGui::MenuItem((std::string(ICON_PH_COPY "  ") + TR("osc.ctx.duplicate")).c_str())) phase.commands.undoableDuplicate({ &cmd });
         int idx = phase.commands.indexOf(&cmd);
-        if (ImGui::MenuItem(ICON_PH_CARET_UP "  Move up", nullptr, false, idx > 0)) phase.commands.undoableMove(idx, idx - 1);
-        if (ImGui::MenuItem(ICON_PH_CARET_DOWN "  Move down", nullptr, false, idx >= 0 && idx + 1 < (int)phase.commands.items.size())) phase.commands.undoableMove(idx, idx + 1);
+        if (ImGui::MenuItem((std::string(ICON_PH_CARET_UP "  ") + TR("osc.ctx.moveUp")).c_str(), nullptr, false, idx > 0)) phase.commands.undoableMove(idx, idx - 1);
+        if (ImGui::MenuItem((std::string(ICON_PH_CARET_DOWN "  ") + TR("osc.ctx.moveDown")).c_str(), nullptr, false, idx >= 0 && idx + 1 < (int)phase.commands.items.size())) phase.commands.undoableMove(idx, idx + 1);
         ImGui::Separator();
-        if (ImGui::MenuItem(ICON_PH_TRASH "  Remove")) remove = true;
+        if (ImGui::MenuItem((std::string(ICON_PH_TRASH "  ") + TR("osc.ctx.remove")).c_str())) remove = true;
         ImGui::EndPopup();
     }
     ImGui::PopID();
@@ -200,15 +200,15 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     float testW = ImGui::GetFrameHeight();
     float delayW = 64.f * theme::scale();
     float msW = ImGui::CalcTextSize("ms").x + 4;
-    const char* addLabelLong = ICON_PH_PLUS " Add OSC command";
-    const char* addLabelShort = ICON_PH_PLUS " Add";
+    std::string addLabelLong = std::string(ICON_PH_PLUS " ") + TR("osc.addCommandLong");
+    std::string addLabelShort = std::string(ICON_PH_PLUS " ") + TR("osc.addCommandShort");
     float nameW = ImGui::CalcTextSize(phase.niceName.c_str()).x + ImGui::GetFontSize() * 1.6f + 16;
-    float addW = ImGui::CalcTextSize(addLabelLong).x + pad2;
-    const char* addLabel = addLabelLong;
+    float addW = ImGui::CalcTextSize(addLabelLong.c_str()).x + pad2;
+    const std::string* addLabel = &addLabelLong;
     if (nameW + delayW + msW + testW + addW + spacing * 4 + 12 > w)
     {
-        addLabel = addLabelShort;
-        addW = ImGui::CalcTextSize(addLabelShort).x + pad2;
+        addLabel = &addLabelShort;
+        addW = ImGui::CalcTextSize(addLabelShort.c_str()).x + pad2;
     }
     float controlsW = delayW + msW + testW + addW + spacing * 3;
     float right = hmin.x + w - 6;
@@ -228,9 +228,9 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     {
         switch (phase.anchor)
         {
-        case Anchor::Start: ImGui::SetTooltip("%s\nSent when the trigger happens (+ delay)", phase.niceName.c_str()); break;
-        case Anchor::End:   ImGui::SetTooltip("%s\nSent when playback ends (+ delay)", phase.niceName.c_str()); break;
-        case Anchor::Timer: ImGui::SetTooltip("%s\nSent when the timer elapses after the trigger", phase.niceName.c_str()); break;
+        case Anchor::Start: ImGui::SetTooltip(TR("osc.startTooltip"), phase.niceName.c_str()); break;
+        case Anchor::End:   ImGui::SetTooltip(TR("osc.endTooltip"), phase.niceName.c_str()); break;
+        case Anchor::Timer: ImGui::SetTooltip(TR("osc.timerAnchorTooltip"), phase.niceName.c_str()); break;
         }
     }
     ImGui::SameLine();
@@ -238,14 +238,14 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     DelayField("delay", *phase.delayP, phase.isTimer(), ctx.allowNegativeDelay, delayW);
     ImGui::SameLine();
     bool canTest = ctx.trigger && ctx.owner && phase.hasCommands();
-    if (IconButton(ICON_PH_PAPER_PLANE_TILT, "Send all commands of this phase now (test)", ImVec2(testW, 0), canTest))
+    if (IconButton(ICON_PH_PAPER_PLANE_TILT, TR("osc.sendPhaseNow"), ImVec2(testW, 0), canTest))
         ctx.trigger->testPhase(*ctx.owner, phase);
     ImGui::SameLine();
-    if (GhostButton(addLabel, ImVec2(addW, 0)))
+    if (GhostButton(addLabel->c_str(), ImVec2(addW, 0)))
     {
         phase.commands.addCommandUndoable("/", 0);
     }
-    if (addLabel == addLabelShort && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Add OSC command");
+    if (addLabel == &addLabelShort && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("osc.addCommand"));
     ImGui::SetCursorScreenPos(ImVec2(hmin.x, hmin.y + h + 4));
 
     // rows
@@ -254,8 +254,8 @@ void OscPhaseSection(OscPhase& phase, OscTargetManager& targets, const OscEditor
     if (phase.commands.items.empty())
     {
         ImGui::PushStyleColor(ImGuiCol_Text, c.textFaint);
-        ImGui::TextUnformatted(phase.anchor == Anchor::Timer ? "No commands: nothing is sent when the timer elapses"
-                                                             : "No commands");
+        ImGui::TextUnformatted(phase.anchor == Anchor::Timer ? TR("osc.noCommandsTimer")
+                                                             : TR("osc.noCommands"));
         ImGui::PopStyleColor();
     }
     for (OscCommand* cmd : phase.commands.commands())
@@ -272,20 +272,20 @@ static void targetEditorPopup(OscTarget& t, Project& project, OscTargetManager& 
     ImGui::PushID((void*)&t);
     if (ImGui::BeginPopup("##targetEdit"))
     {
-        ImGui::TextUnformatted(t.builtin ? "Localhost" : "Edit target");
+        ImGui::TextUnformatted(t.builtin ? TR("osc.localhost") : TR("osc.editTarget"));
         ImGui::Separator();
         ImGui::SetNextItemWidth(220 * theme::scale());
         if (!t.builtin)
         {
-            organic::UndoableInputText("Name", t.niceName, &t, [&t](const std::string&, const std::string& n) { t.setNiceName(n); notifyStructureChanged(&t); });
+            organic::UndoableInputText(TR("osc.name"), t.niceName, &t, [&t](const std::string&, const std::string& n) { t.setNiceName(n); notifyStructureChanged(&t); });
         }
-        else TextDim("Name: Localhost (built-in)");
+        else TextDim("%s", TR("osc.nameLocalhost"));
         {
             std::string host = t.host();
             ImGui::SetNextItemWidth(220 * theme::scale());
             static OscTarget* s_editing = nullptr;
             static std::string s_old;
-            if (ImGui::InputTextWithHint("IP address", "127.0.0.1", &host))
+            if (ImGui::InputTextWithHint(TR("osc.ipAddress"), TR("osc.ipHint"), &host))
             {
                 if (s_editing != &t) { s_editing = &t; s_old = t.host(); }
                 t.hostP->setValue(host);
@@ -293,23 +293,23 @@ static void targetEditorPopup(OscTarget& t, Project& project, OscTargetManager& 
             if (ImGui::IsItemActivated()) { s_editing = &t; s_old = t.host(); }
             if (ImGui::IsItemDeactivatedAfterEdit() && s_editing == &t) { t.hostP->recordEdit(s_old, t.hostP->value); s_editing = nullptr; }
         }
-        if (ImGui::TreeNodeEx("Advanced", ImGuiTreeNodeFlags_SpanAvailWidth))
+        if (ImGui::TreeNodeEx(TR("osc.advanced"), ImGuiTreeNodeFlags_SpanAvailWidth))
         {
             int port = t.port();
             ImGui::SetNextItemWidth(120 * theme::scale());
-            if (ImGui::InputInt("Port", &port, 0, 0))
+            if (ImGui::InputInt(TR("osc.port"), &port, 0, 0))
                 t.portP->setUndoable(std::clamp(port, 1, 65535));
-            TextDim("Default 8000");
+            TextDim("%s", TR("osc.defaultPort"));
             ImGui::TreePop();
         }
         ImGui::Spacing();
         bool isDef = t.isDefault();
-        if (ImGui::Checkbox("Default target", &isDef) && isDef) targets.setDefaultUndoable(&t);
+        if (ImGui::Checkbox(TR("osc.defaultTarget"), &isDef) && isDef) targets.setDefaultUndoable(&t);
         if (!t.builtin)
         {
             ImGui::Separator();
             ImGui::PushStyleColor(ImGuiCol_Text, c.danger);
-            if (ImGui::Selectable(ICON_PH_TRASH "  Delete target"))
+            if (ImGui::Selectable((std::string(ICON_PH_TRASH "  ") + TR("osc.deleteTarget")).c_str()))
             {
                 project.deleteTargetUndoable(&t);
                 ImGui::CloseCurrentPopup();
@@ -326,15 +326,16 @@ void OscTargetsSection(OscTargetManager& targets, Project& project)
     const auto& c = theme::colors();
     ImGui::PushID("osc-targets");
     // header
-    float addW = ImGui::CalcTextSize(ICON_PH_PLUS " Add Target").x + ImGui::GetStyle().FramePadding.x * 2;
+    std::string addTargetLabel = std::string(ICON_PH_PLUS " ") + TR("osc.addTarget");
+    float addW = ImGui::CalcTextSize(addTargetLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2;
     ImGui::AlignTextToFramePadding();
     ImGui::PushStyleColor(ImGuiCol_Text, c.textDim);
-    ImGui::TextUnformatted("OSC TARGETS");
+    ImGui::TextUnformatted(TR("osc.targets"));
     ImGui::PopStyleColor();
     ImGui::SameLine(ImGui::GetContentRegionMax().x - addW);
-    if (GhostButton(ICON_PH_PLUS " Add Target", ImVec2(addW, 0)))
+    if (GhostButton(addTargetLabel.c_str(), ImVec2(addW, 0)))
     {
-        OscTarget* t = targets.addTargetUndoable("New target", "192.168.0.10", OscTarget::kDefaultPort);
+        OscTarget* t = targets.addTargetUndoable(TR("osc.newTargetName"), "192.168.0.10", OscTarget::kDefaultPort);
         if (t) { ImGui::PushID((void*)t); ImGui::OpenPopup("##targetEdit"); ImGui::PopID(); }
     }
     // rows
@@ -347,10 +348,10 @@ void OscTargetsSection(OscTargetManager& targets, Project& project)
         if (GhostButton(def ? ICON_PH_RADIO_BUTTON : ICON_PH_CIRCLE, ImVec2(ImGui::GetFrameHeight(), 0)) && !def)
             targets.setDefaultUndoable(t);
         ImGui::PopStyleColor();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip(def ? "Default target" : "Make this the default target");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", def ? TR("osc.defaultTarget") : TR("osc.makeDefault"));
         ImGui::SameLine();
         ImGui::AlignTextToFramePadding();
-        std::string name = t->displayName() + (def ? "  (default)" : "");
+        std::string name = t->displayName() + (def ? std::string(" ") + TR("osc.defaultSuffix") : std::string());
         ImGui::TextUnformatted(name.c_str());
         // host on the right, then edit button
         float editW = ImGui::GetFrameHeight();
@@ -361,7 +362,7 @@ void OscTargetsSection(OscTargetManager& targets, Project& project)
         TextDim("%s", host.c_str());
         ImGui::SameLine(ImGui::GetContentRegionMax().x - editW);
         if (GhostButton(ICON_PH_DOTS_THREE, ImVec2(editW, 0))) ImGui::OpenPopup("##targetEdit");
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("Edit target");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) ImGui::SetTooltip("%s", TR("osc.editTarget"));
         ImGui::PopID();
         targetEditorPopup(*t, project, targets);
     }

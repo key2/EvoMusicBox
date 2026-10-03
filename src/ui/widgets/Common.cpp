@@ -1,4 +1,5 @@
 #include "ui/widgets/Common.h"
+#include "ui/I18n.h"
 #include "ui/Icons.h"
 #include <algorithm>
 #include <cstdarg>
@@ -8,6 +9,19 @@ namespace evobox
 {
 namespace ui
 {
+
+const char* liveStateLabel(LiveState s)
+{
+    switch (s)
+    {
+    case LiveState::Disconnected: return TR("live.state.disconnected");
+    case LiveState::Connecting:   return TR("live.state.connecting");
+    case LiveState::Connected:    return TR("live.state.connected");
+    case LiveState::Ended:        return TR("gift.streamEnded");
+    case LiveState::Error:        return TR("live.state.error");
+    }
+    return TR("live.state.disconnected");
+}
 
 float pulse(double startTime, double now, double duration)
 {
@@ -214,7 +228,7 @@ void ConfirmPopup::draw()
         ImGui::Spacing();
         ImGui::Spacing();
         float bw = 110.f * theme::scale();
-        if (ImGui::Button("Cancel", ImVec2(bw, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+        if (ImGui::Button(TR("dialog.cancel"), ImVec2(bw, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
         ImGui::SameLine();
         bool ok = danger ? DangerButton(confirmLabel.c_str(), ImVec2(bw, 0)) : AccentButton(confirmLabel.c_str(), ImVec2(bw, 0));
         if (ok || ImGui::IsKeyPressed(ImGuiKey_Enter))

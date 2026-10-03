@@ -1,4 +1,5 @@
 #include "ui/panels/WorkspacePanel.h"
+#include "ui/I18n.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
 #include "ui/widgets/StickerPicker.h"
@@ -39,16 +40,17 @@ void SoundboardTab::header(const std::vector<Sound*>& visible)
     const auto& th = theme::colors();
     Project& p = app_.project;
     Category* cat = p.categories.find(app_.selectedCategoryUid);
-    std::string title = cat ? cat->niceName : "All Sounds";
+    std::string title = cat ? cat->niceName : TR("soundboard.allSounds");
     ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.35f);
     ImGui::TextUnformatted(title.c_str());
     ImGui::PopFont();
     ImGui::SameLine();
     ImGui::AlignTextToFramePadding();
-    TextDim("%zu clip%s", visible.size(), visible.size() == 1 ? "" : "s");
+    TextDim(TR("soundboard.clips"), (size_t)visible.size(), visible.size() == 1 ? TR("plural.empty") : TR("plural.s"));
 
     // right side controls
-    float addW = ImGui::CalcTextSize(ICON_PH_PLUS " Add Sound").x + ImGui::GetStyle().FramePadding.x * 2;
+    std::string addLabel = std::string(ICON_PH_PLUS " ") + TR("soundboard.addSound");
+    float addW = ImGui::CalcTextSize(addLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2;
     float toggleW = ImGui::GetFrameHeight() * 2 + 2;
     float searchW = std::clamp(ImGui::GetContentRegionAvail().x * 0.35f, 140.f, 320.f);
     float spacing = ImGui::GetStyle().ItemSpacing.x;
@@ -56,15 +58,15 @@ void SoundboardTab::header(const std::vector<Sound*>& visible)
     ImGui::SameLine(right - addW - toggleW - searchW - spacing * 2);
     if (focusSearch_) { ImGui::SetKeyboardFocusHere(); focusSearch_ = false; }
     ImGui::SetNextItemWidth(searchW);
-    ImGui::InputTextWithHint("##search", ICON_PH_MAGNIFYING_GLASS " Search sounds...", &app_.soundSearch);
+    ImGui::InputTextWithHint("##search", (std::string(ICON_PH_MAGNIFYING_GLASS " ") + TR("soundboard.searchHint")).c_str(), &app_.soundSearch);
     if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Escape)) app_.soundSearch.clear();
     ImGui::SameLine();
     bool grid = app_.prefs.viewMode == ViewMode::Grid;
-    if (ToggleButton(ICON_PH_SQUARES_FOUR, grid, ImVec2(ImGui::GetFrameHeight(), 0), "Grid view")) app_.prefs.viewMode = ViewMode::Grid;
+    if (ToggleButton(ICON_PH_SQUARES_FOUR, grid, ImVec2(ImGui::GetFrameHeight(), 0), TR("soundboard.gridView"))) app_.prefs.viewMode = ViewMode::Grid;
     ImGui::SameLine(0, 2);
-    if (ToggleButton(ICON_PH_LIST, !grid, ImVec2(ImGui::GetFrameHeight(), 0), "List view")) app_.prefs.viewMode = ViewMode::List;
+    if (ToggleButton(ICON_PH_LIST, !grid, ImVec2(ImGui::GetFrameHeight(), 0), TR("soundboard.listView"))) app_.prefs.viewMode = ViewMode::List;
     ImGui::SameLine();
-    if (AccentButton(ICON_PH_PLUS " Add Sound", ImVec2(addW, 0))) wantOpenFileDialog = true;
+    if (AccentButton(addLabel.c_str(), ImVec2(addW, 0))) wantOpenFileDialog = true;
     (void)th;
     ImGui::Separator();
 }
@@ -85,21 +87,21 @@ void SoundboardTab::tileActions(Sound& s, int action)
 void SoundboardTab::contextMenu(Sound& s)
 {
     Project& p = app_.project;
-    if (ImGui::MenuItem(ICON_PH_PLAY "  Play")) app_.playback.play(s, TriggerSource::Tile);
-    if (s.playing() && ImGui::MenuItem(ICON_PH_STOP "  Stop")) app_.playback.stop(s.uid);
+    if (ImGui::MenuItem((std::string(ICON_PH_PLAY "  ") + TR("soundboard.ctx.play")).c_str())) app_.playback.play(s, TriggerSource::Tile);
+    if (s.playing() && ImGui::MenuItem((std::string(ICON_PH_STOP "  ") + TR("soundboard.ctx.stop")).c_str())) app_.playback.stop(s.uid);
     bool effect = s.isEffect();
-    if (ImGui::MenuItem(ICON_PH_SPARKLE "  Effect (plays on top, stacks)", nullptr, effect)) s.isEffectP->setUndoable(!effect);
+    if (ImGui::MenuItem((std::string(ICON_PH_SPARKLE "  ") + TR("soundboard.ctx.effect")).c_str(), nullptr, effect)) s.isEffectP->setUndoable(!effect);
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-        ImGui::SetTooltip("Effects play over the music and stack when pressed again.\nMusic (unticked) stops the music that was playing.");
-    if (ImGui::MenuItem(ICON_PH_SCISSORS "  Edit Clip")) { app_.select(&s); app_.focusBottomPanel = "Clip Editor"; }
-    if (ImGui::MenuItem(ICON_PH_PENCIL_SIMPLE "  Rename")) { renamingUid_ = s.uid; renameBuf_ = s.niceName; }
-    if (ImGui::BeginMenu(ICON_PH_SMILEY "  Change Sticker / Picture"))
+        ImGui::SetTooltip("%s", TR("soundboard.effectTooltip"));
+    if (ImGui::MenuItem((std::string(ICON_PH_SCISSORS "  ") + TR("soundboard.ctx.editClip")).c_str())) { app_.select(&s); app_.focusBottomPanel = "Clip Editor"; }
+    if (ImGui::MenuItem((std::string(ICON_PH_PENCIL_SIMPLE "  ") + TR("soundboard.ctx.rename")).c_str())) { renamingUid_ = s.uid; renameBuf_ = s.niceName; }
+    if (ImGui::BeginMenu((std::string(ICON_PH_SMILEY "  ") + TR("soundboard.ctx.changeSticker")).c_str()))
     {
         std::string st = s.sticker();
         if (StickerPickerBody("tilesticker", st, s.color(), &s)) s.stickerP->setUndoable(st);
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu(ICON_PH_PALETTE "  Colour"))
+    if (ImGui::BeginMenu((std::string(ICON_PH_PALETTE "  ") + TR("soundboard.ctx.colour")).c_str()))
     {
         static const ImVec4 palette[] = {
             ImVec4(0.36f, 0.56f, 0.95f, 1), ImVec4(0.30f, 0.72f, 0.62f, 1), ImVec4(0.95f, 0.62f, 0.25f, 1),
@@ -114,7 +116,7 @@ void SoundboardTab::contextMenu(Sound& s)
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu(ICON_PH_FOLDER "  Move to Category"))
+    if (ImGui::BeginMenu((std::string(ICON_PH_FOLDER "  ") + TR("soundboard.ctx.moveToCategory")).c_str()))
     {
         for (Category* c : p.categories.categories())
         {
@@ -126,18 +128,18 @@ void SoundboardTab::contextMenu(Sound& s)
     }
     ImGui::Separator();
     static nlohmann::json s_oscClipboard;
-    if (ImGui::MenuItem(ICON_PH_COPY "  Copy OSC actions", nullptr, false, s.actions().hasCommands())) s_oscClipboard = s.actions().save();
-    if (ImGui::MenuItem(ICON_PH_CLIPBOARD "  Paste OSC actions", nullptr, false, !s_oscClipboard.is_null()))
+    if (ImGui::MenuItem((std::string(ICON_PH_COPY "  ") + TR("soundboard.ctx.copyOsc")).c_str(), nullptr, false, s.actions().hasCommands())) s_oscClipboard = s.actions().save();
+    if (ImGui::MenuItem((std::string(ICON_PH_CLIPBOARD "  ") + TR("soundboard.ctx.pasteOsc")).c_str(), nullptr, false, !s_oscClipboard.is_null()))
     {
         nlohmann::json before = s.actions().save(), after = s_oscClipboard;
         Sound* sp = &s;
-        organic::UndoManager::get().perform("Paste OSC actions",
+        organic::UndoManager::get().perform(TR("soundboard.ctx.pasteOsc"),
             [sp, after] { sp->actions().clearCommands(); sp->actions().load(after); notifyStructureChanged(sp); },
             [sp, before] { sp->actions().clearCommands(); sp->actions().load(before); notifyStructureChanged(sp); }, { sp });
     }
     ImGui::Separator();
-    if (ImGui::MenuItem(ICON_PH_COPY "  Duplicate")) app_.importer.duplicateSound(s);
-    if (ImGui::MenuItem(ICON_PH_TRASH "  Delete"))
+    if (ImGui::MenuItem((std::string(ICON_PH_COPY "  ") + TR("soundboard.ctx.duplicate")).c_str())) app_.importer.duplicateSound(s);
+    if (ImGui::MenuItem((std::string(ICON_PH_TRASH "  ") + TR("soundboard.ctx.delete")).c_str()))
     {
         Sound* sp = &s;
         confirm.open("Delete '" + s.niceName + "'?", "The tile and its OSC commands are removed (undo with Ctrl+Z).",
@@ -214,7 +216,7 @@ void SoundboardTab::grid(const std::vector<Sound*>& visible)
             {
                 std::string oldName = rs->niceName, newName = str::trim(renameBuf_);
                 if (!newName.empty() && newName != oldName)
-                    organic::UndoManager::get().perform("Rename sound",
+                    organic::UndoManager::get().perform(TR("soundboard.renameSound"),
                         [rs, newName] { rs->setNiceName(newName); notifyStructureChanged(rs); },
                         [rs, oldName] { rs->setNiceName(oldName); notifyStructureChanged(rs); }, { rs });
                 renamingUid_ = 0;
@@ -236,11 +238,11 @@ void SoundboardTab::list(const std::vector<Sound*>& visible)
         ImGui::TableSetupScrollFreeze(0, 1);
         // play + (effects while playing) stop
         ImGui::TableSetupColumn("##play", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight() * 2 + ImGui::GetStyle().ItemSpacing.x);
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 3.f);
-        ImGui::TableSetupColumn("Category", ImGuiTableColumnFlags_WidthStretch, 1.5f);
-        ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed, 80.f);
-        ImGui::TableSetupColumn("OSC", ImGuiTableColumnFlags_WidthFixed, 50.f);
-        ImGui::TableSetupColumn("Targets", ImGuiTableColumnFlags_WidthStretch, 2.f);
+        ImGui::TableSetupColumn(TR("soundboard.col.name"), ImGuiTableColumnFlags_WidthStretch, 3.f);
+        ImGui::TableSetupColumn(TR("soundboard.col.category"), ImGuiTableColumnFlags_WidthStretch, 1.5f);
+        ImGui::TableSetupColumn(TR("soundboard.col.duration"), ImGuiTableColumnFlags_WidthFixed, 80.f);
+        ImGui::TableSetupColumn(TR("soundboard.col.osc"), ImGuiTableColumnFlags_WidthFixed, 50.f);
+        ImGui::TableSetupColumn(TR("soundboard.col.targets"), ImGuiTableColumnFlags_WidthStretch, 2.f);
         ImGui::TableHeadersRow();
         for (Sound* s : visible)
         {
@@ -262,7 +264,10 @@ void SoundboardTab::list(const std::vector<Sound*>& visible)
                 ImGui::SameLine();
                 if (GhostButton(ICON_PH_STOP "##stop", ImVec2(ImGui::GetFrameHeight(), 0))) app_.playback.stop(s->uid);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip(s->rt.activeVoices > 1 ? "Stop all %d plays of this effect" : "Stop this effect", s->rt.activeVoices);
+                {
+                    if (s->rt.activeVoices > 1) ImGui::SetTooltip(TR("soundboard.stopAllPlays"), s->rt.activeVoices);
+                    else ImGui::SetTooltip("%s", TR("soundboard.stopThisEffect"));
+                }
             }
             ImGui::PopStyleColor();
             ImGui::TableNextColumn();
@@ -273,7 +278,7 @@ void SoundboardTab::list(const std::vector<Sound*>& visible)
             if (ImGui::BeginPopupContextItem("##lctx")) { contextMenu(*s); ImGui::EndPopup(); }
             ImGui::TableNextColumn();
             Category* c = app_.project.categories.find(s->categoryUid);
-            TextDim("%s", c ? c->niceName.c_str() : "-");
+            TextDim("%s", c ? c->niceName.c_str() : TR("soundboard.noCategoryDash"));
             ImGui::TableNextColumn();
             ImGui::TextUnformatted(formatTime(s->clipDuration(), true).c_str());
             ImGui::TableNextColumn();
@@ -283,7 +288,7 @@ void SoundboardTab::list(const std::vector<Sound*>& visible)
             for (Uid tu : s->actions().referencedTargets())
             {
                 OscTarget* t = app_.project.oscTargets.resolve(tu);
-                std::string n = t ? t->displayName() : "?";
+                std::string n = t ? t->displayName() : TR("soundboard.unknownTarget");
                 if (targets.find(n) == std::string::npos) targets += (targets.empty() ? "" : ", ") + n;
             }
             TextDim("%s", targets.c_str());
@@ -302,12 +307,12 @@ void SoundboardTab::draw()
     {
         Category* cat = p.categories.find(app_.selectedCategoryUid);
         ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 1.6f);
-        TextCentered(cat ? cat->niceName.c_str() : "ALL SOUNDS");
+        TextCentered(cat ? cat->niceName.c_str() : TR("soundboard.allSoundsPerf"));
         ImGui::PopFont();
         // quick category switcher
         if (ImGui::BeginTabBar("##perfcats", ImGuiTabBarFlags_FittingPolicyScroll))
         {
-            if (ImGui::BeginTabItem("All")) { app_.selectedCategoryUid = 0; ImGui::EndTabItem(); }
+            if (ImGui::BeginTabItem(TR("soundboard.perfAll"))) { app_.selectedCategoryUid = 0; ImGui::EndTabItem(); }
             for (Category* c : p.categories.categories())
             {
                 ImGui::PushID((void*)c);
@@ -322,17 +327,17 @@ void SoundboardTab::draw()
     ImGui::BeginChild("##board", ImVec2(0, 0), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollWithMouse * 0);
     ImVec2 bodyMax = ImVec2(bodyMin.x + ImGui::GetWindowSize().x, bodyMin.y + ImGui::GetWindowSize().y);
     if (visible.empty() && app_.performanceMode)
-        EmptyState("No sounds in this category", nullptr, ICON_PH_SPEAKER_SLASH);
+        EmptyState(TR("soundboard.empty.noneInCategory"), nullptr, ICON_PH_SPEAKER_SLASH);
     else if (visible.empty() && p.sounds.items.empty() && app_.soundSearch.empty())
     {
-        EmptyState("No sounds yet", "Drop media here or click Add Sound", ICON_PH_UPLOAD_SIMPLE);
+        EmptyState(TR("soundboard.empty.noneYet"), TR("soundboard.empty.dropHere"), ICON_PH_UPLOAD_SIMPLE);
         ImGui::Spacing();
         ImVec2 tile = tileSizeFor(app_.prefs.tileSize);
         ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - tile.x) * 0.5f);
         if (AddSoundTile(tile, app_.drops.pending())) wantOpenFileDialog = true;
     }
     else if (visible.empty() && !app_.soundSearch.empty())
-        EmptyState("No match", ("Nothing named like '" + app_.soundSearch + "'").c_str(), ICON_PH_MAGNIFYING_GLASS);
+        EmptyState(TR("soundboard.empty.noMatch"), evobox::trFmt("soundboard.empty.nothingNamed", app_.soundSearch), ICON_PH_MAGNIFYING_GLASS);
     else if (app_.prefs.viewMode == ViewMode::List && !app_.performanceMode) list(visible);
     else grid(visible);
 

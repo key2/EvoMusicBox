@@ -30,6 +30,7 @@ json Prefs::toJson() const
     j["activeTab"] = (int)activeTab;
     j["performanceMode"] = performanceMode;
     j["uiScale"] = uiScale;
+    j["language"] = language;
     j["tiktokUsername"] = tiktokUsername;
     j["tiktokAutoConnect"] = tiktokAutoConnect;
     j["tiktokPolling"] = tiktokPolling;
@@ -61,6 +62,7 @@ void Prefs::fromJson(const json& j)
     activeTab = (WorkspaceTab)std::clamp(j.value("activeTab", (int)activeTab), 0, 1);
     performanceMode = j.value("performanceMode", performanceMode);
     uiScale = std::clamp(j.value("uiScale", uiScale), 0.5f, 3.f);
+    language = j.value("language", language);
     tiktokUsername = j.value("tiktokUsername", tiktokUsername);
     tiktokAutoConnect = j.value("tiktokAutoConnect", tiktokAutoConnect);
     tiktokPolling = j.value("tiktokPolling", tiktokPolling);

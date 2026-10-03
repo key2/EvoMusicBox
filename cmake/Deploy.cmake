@@ -18,6 +18,9 @@ add_custom_command(TARGET evobox POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${IMGUI_DIR}/misc/fonts/Roboto-Medium.ttf
             ${_evobox_bin_dir}/fonts/Roboto-Medium.ttf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/third_party/fonts/NotoSansCJKsc-Regular.otf
+            ${_evobox_bin_dir}/fonts/NotoSansCJKsc-Regular.otf
     COMMENT "Deploying assets and fonts next to evobox"
     VERBATIM)
 

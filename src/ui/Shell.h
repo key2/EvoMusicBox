@@ -67,6 +67,7 @@ private:
     enum class AfterSave { None, New, Open, Quit } afterSave_ = AfterSave::None;
 
     void menuBar();
+    void languageMenu();
     void statusBar();
     void dialogs();
     void shortcuts();

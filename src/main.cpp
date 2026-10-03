@@ -4,6 +4,7 @@
 #include "app/Application.h"
 #include "app/Demo.h"
 #include "ui/Fonts.h"
+#include "ui/I18n.h"
 #include "ui/Shell.h"
 #include "ui/Theme.h"
 #include "util/CrashHandler.h"
@@ -238,6 +239,9 @@ int main(int argc, char** argv)
     Application app;
     g_app = &app;
     app.prefs.load(paths::prefsFile().string());
+    // Load the UI translations and select the saved language before any string is drawn.
+    I18n::get().init();
+    I18n::get().setLanguage(app.prefs.language);
     int ww = app.prefs.windowW > 400 ? app.prefs.windowW : 1600;
     int wh = app.prefs.windowH > 300 ? app.prefs.windowH : 940;
     GLFWwindow* window = glfwCreateWindow(ww, wh, "EvoMusicBox", nullptr, nullptr);

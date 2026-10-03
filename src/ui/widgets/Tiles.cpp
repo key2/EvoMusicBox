@@ -1,4 +1,5 @@
 #include "ui/widgets/Tiles.h"
+#include "ui/I18n.h"
 #include "ui/Fonts.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
@@ -8,6 +9,7 @@
 #include "util/TimeFormat.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 
 namespace evobox
 {
@@ -260,8 +262,8 @@ bool AddSoundTile(ImVec2 size, bool highlight)
     float fs = ImGui::GetFontSize() * 2.2f;
     ImVec2 gs = Fonts::ui->CalcTextSizeA(fs, FLT_MAX, 0, ICON_PH_PLUS);
     dl->AddText(Fonts::ui, fs, ImVec2(p0.x + (size.x - gs.x) * 0.5f, p0.y + size.y * 0.36f - gs.y * 0.5f), theme::u32(tc), ICON_PH_PLUS);
-    const char* l1 = "Add Sound";
-    const char* l2 = "or drag & drop";
+    const char* l1 = TR("tiles.addSound");
+    const char* l2 = TR("tiles.orDragDrop");
     ImVec2 s1 = ImGui::CalcTextSize(l1), s2 = ImGui::CalcTextSize(l2);
     float y = p1.y - ImGui::GetTextLineHeight() * 2.f - 8;
     dl->AddText(ImVec2(p0.x + (size.x - s1.x) * 0.5f, y), theme::u32(tc), l1);
@@ -339,7 +341,14 @@ TileAction GiftTile(GiftInfo& g, ImVec2 size, const GiftTileState& st)
     // name + diamonds
     float pad = 8 * theme::scale();
     float nameY = p1.y - ImGui::GetTextLineHeight() * 2.f - pad;
-    std::string name = ellipsize(g.name.empty() ? "Gift " + std::to_string(g.id) : g.name, size.x - pad * 2);
+    std::string giftFallback;
+    if (g.name.empty())
+    {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), TR("tiles.giftFallback"), (long long)g.id);
+        giftFallback = buf;
+    }
+    std::string name = ellipsize(g.name.empty() ? giftFallback : g.name, size.x - pad * 2);
     ImVec2 nts = ImGui::CalcTextSize(name.c_str());
     dl->AddText(ImVec2(p0.x + (size.x - nts.x) * 0.5f, nameY), theme::u32(c.text), name.c_str());
     std::string dia = ICON_PH_DIAMOND " " + str::groupThousands(g.diamondCount);

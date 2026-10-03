@@ -1,4 +1,5 @@
 #include "ui/panels/SettingsPanel.h"
+#include "ui/I18n.h"
 #include "media/FFmpegDecoder.h"
 #include "ui/Icons.h"
 #include "ui/Theme.h"
@@ -13,22 +14,22 @@ namespace ui
 void SettingsPanel::draw(bool* open)
 {
     ImGui::SetNextWindowSize(ImVec2(420, 520), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Settings", open))
+    if (ImGui::Begin((TR("panel.settings") + std::string("###Settings")).c_str(), open))
     {
-        SectionHeader("Project");
+        SectionHeader(TR("settings.project"));
         app_.project.settings.inspectorGui();
 
         Spacer(8);
-        SectionHeader("Audio (this machine)");
+        SectionHeader(TR("settings.audio"));
         if (devicesTime_ < 0 || app_.now() - devicesTime_ > 5.0) { devices_ = app_.audio.enumerateDevices(); devicesTime_ = app_.now(); }
-        std::string cur = app_.prefs.audioDevice.empty() ? "System default" : app_.prefs.audioDevice;
+        std::string cur = app_.prefs.audioDevice.empty() ? TR("settings.systemDefault") : app_.prefs.audioDevice;
         ImGui::SetNextItemWidth(-1);
         if (ImGui::BeginCombo("##device", cur.c_str()))
         {
-            if (ImGui::Selectable("System default", app_.prefs.audioDevice.empty())) { app_.prefs.audioDevice.clear(); wantReinitAudio = true; }
+            if (ImGui::Selectable(TR("settings.systemDefault"), app_.prefs.audioDevice.empty())) { app_.prefs.audioDevice.clear(); wantReinitAudio = true; }
             for (auto& d : devices_)
             {
-                std::string l = d.name + (d.isDefault ? "  (default)" : "");
+                std::string l = d.name + (d.isDefault ? TR("settings.defaultSuffix") : "");
                 if (ImGui::Selectable(l.c_str(), app_.prefs.audioDevice == d.name)) { app_.prefs.audioDevice = d.name; wantReinitAudio = true; }
             }
             ImGui::EndCombo();
@@ -36,7 +37,7 @@ void SettingsPanel::draw(bool* open)
         int period = app_.prefs.periodSizeInFrames;
         const int periods[] = { 128, 256, 512, 1024 };
         ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted("Buffer");
+        ImGui::TextUnformatted(TR("settings.buffer"));
         ImGui::SameLine();
         for (int p : periods)
         {
@@ -46,37 +47,60 @@ void SettingsPanel::draw(bool* open)
             ImGui::SameLine(0, 2);
         }
         ImGui::NewLine();
-        TextDim(app_.audio.ok() ? "Device: %s @ %d Hz, %d voices active" : "No audio device (silent)",
-                app_.audio.deviceName().c_str(), app_.audio.deviceSampleRate(), app_.audio.activeVoiceCount());
+        if (app_.audio.ok())
+            TextDim(TR("settings.deviceInfo"), app_.audio.deviceName().c_str(), app_.audio.deviceSampleRate(), app_.audio.activeVoiceCount());
+        else
+            TextDim("%s", TR("settings.noDevice"));
 
         Spacer(8);
-        SectionHeader("Interface (this machine)");
+        SectionHeader(TR("settings.interface"));
         int ts = (int)app_.prefs.tileSize;
-        const char* sizes[] = { "Compact", "Standard", "Large" };
+        const char* sizes[] = { TR("tileSize.compact"), TR("tileSize.standard"), TR("tileSize.large") };
         ImGui::SetNextItemWidth(160 * theme::scale());
-        if (ImGui::Combo("Tile size", &ts, sizes, 3)) app_.prefs.tileSize = (TileSize)ts;
+        if (ImGui::Combo(TR("settings.tileSize"), &ts, sizes, 3)) app_.prefs.tileSize = (TileSize)ts;
         float sc = app_.prefs.uiScale;
         ImGui::SetNextItemWidth(160 * theme::scale());
-        if (ImGui::SliderFloat("UI scale", &sc, 0.75f, 2.0f, "%.2f")) app_.prefs.uiScale = sc;
+        if (ImGui::SliderFloat(TR("settings.uiScale"), &sc, 0.75f, 2.0f, "%.2f")) app_.prefs.uiScale = sc;
         if (ImGui::IsItemDeactivatedAfterEdit()) wantReloadFonts = true;
-        ImGui::Checkbox("Reopen last project at startup", &app_.prefs.reopenLastProject);
+        {
+            I18n& i18n = I18n::get();
+            const std::string& langCur = i18n.language();
+            std::string curName;
+            for (auto& l : i18n.available()) if (l.code == langCur) curName = l.nativeName;
+            ImGui::SetNextItemWidth(160 * theme::scale());
+            if (ImGui::BeginCombo(TR("settings.language"), curName.c_str()))
+            {
+                for (auto& l : i18n.available())
+                {
+                    bool sel = l.code == langCur;
+                    if (ImGui::Selectable(l.nativeName.c_str(), sel) && !sel)
+                    {
+                        i18n.setLanguage(l.code);
+                        app_.prefs.language = l.code;
+                    }
+                    if (sel) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+        ImGui::Checkbox(TR("settings.reopenLast"), &app_.prefs.reopenLastProject);
 
 #ifdef EVOBOX_WITH_TIKTOK
         Spacer(8);
-        SectionHeader("TikTok LIVE (this machine)");
-        ImGui::Checkbox("Also use HTTP polling (dual mode, more complete)", &app_.prefs.tiktokPolling);
-        ImGui::Checkbox("Connect automatically at startup", &app_.prefs.tiktokAutoConnect);
-        TextDim("Username: @%s", app_.prefs.tiktokUsername.c_str());
-        TextDim("Scripts: %s", TikTokLiveService::defaultJsDir().empty() ? "(library default)" : TikTokLiveService::defaultJsDir().c_str());
+        SectionHeader(TR("settings.tiktok"));
+        ImGui::Checkbox(TR("settings.tiktokPolling"), &app_.prefs.tiktokPolling);
+        ImGui::Checkbox(TR("settings.tiktokAutoConnect"), &app_.prefs.tiktokAutoConnect);
+        TextDim(TR("settings.tiktokUsername"), app_.prefs.tiktokUsername.c_str());
+        TextDim(TR("settings.tiktokScripts"), TikTokLiveService::defaultJsDir().empty() ? TR("settings.libraryDefault") : TikTokLiveService::defaultJsDir().c_str());
 #endif
 
         Spacer(8);
-        SectionHeader("About");
-        TextDim("EvoMusicBox %s", EVOBOX_VERSION);
+        SectionHeader(TR("settings.about"));
+        TextDim(TR("settings.aboutVersion"), EVOBOX_VERSION);
         TextDim("%s", FFmpegDecoder::versionString().c_str());
-        TextDim("Dear ImGui %s (docking)", IMGUI_VERSION);
-        TextDim("Config: %s", paths::configDir().string().c_str());
-        TextDim("Cache:  %s", paths::cacheDir().string().c_str());
+        TextDim(TR("settings.imguiVersion"), IMGUI_VERSION);
+        TextDim(TR("settings.configPath"), paths::configDir().string().c_str());
+        TextDim(TR("settings.cachePath"), paths::cacheDir().string().c_str());
     }
     ImGui::End();
 }
