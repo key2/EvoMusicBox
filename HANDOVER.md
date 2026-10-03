@@ -431,9 +431,12 @@ panel, `--import-dialog <dir>` the file dialog.
   11/11 suites on both, Chinese UI verified headlessly on both (prefs `language` = `zh`); the
   16 MB CJK font grows the packages to 22 MB (Linux tgz), 64 MB installer / 84 MB zip. The
   **v0.1.0 release assets were replaced** with this build and the `v0.1.0` tag moved onto this
-  commit (`git tag -f` + `git push --force origin v0.1.0`, `gh release upload --clobber`) — the
-  release was hours old with no downloads; from now on a changed build gets a new version + tag
-  (bump `EVOBOX_VERSION`). Not yet done: this file has no §4 section on the macOS packaging
+  commit (`git tag -f` + `git push --force origin v0.1.0`, `gh release upload --clobber`), and
+  again later the same day with the translation-complete build (`e069773`+). The author's practice
+  while 0.1.0 is the only release: refresh its Windows assets and re-point the tag on request
+  (checksums in the notes change each time). Once the package has users, bump `EVOBOX_VERSION`
+  and create a new tag/release instead, so a published checksum never changes under anyone's
+  feet. Not yet done: this file has no §4 section on the macOS packaging
   (`tools/macos/build.sh`) — README.md's "macOS build" section is the reference for now.
 
 **2026-10-01**
